@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cuestionario UX/UI con Progreso Persistente</title>
+    <title>Cuestionario UX/UI con Estadísticas</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="text/javascript">document.oncontextmenu = function(){return false;}</script>'
+    <script type="text/javascript">document.oncontextmenu = function(){return false;}</script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -48,6 +48,35 @@
         .quiz-card {
             min-height: 180px; 
         }
+        .stats-section dt {
+            font-weight: 600;
+            color: #94a3b8; /* slate-400 */
+        }
+        .stats-section dd {
+            font-size: 1.125rem; /* text-lg */
+            color: #e2e8f0; /* slate-200 */
+        }
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background-color: #1e293b; /* slate-800 */
+            padding: 2rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 90%;
+            max-width: 400px;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100 flex items-center justify-center min-h-screen p-4 py-8">
@@ -56,13 +85,47 @@
 
         <div id="initial-view">
             <h1 class="text-3xl md:text-4xl font-bold text-center mb-8 text-sky-400">Cuestionarios UX/UI</h1>
-            <p class="text-center text-slate-300 mb-10">Selecciona un cuestionario para comenzar o revisa tu progreso:</p>
-            <div id="quiz-selection-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                </div>
+            <p class="text-center text-slate-300 mb-6">Selecciona un cuestionario para comenzar o revisa tu progreso:</p>
+            <div id="quiz-selection-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            </div>
+            <button onclick="showStatisticsView()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75">
+                Ver Estadísticas Generales
+            </button>
         </div>
 
         <div id="quiz-view" class="hidden">
-            <div class="flex justify-between items-center mb-6">
+            </div>
+
+        <div id="statistics-view" class="hidden">
+            <h2 class="text-3xl font-bold text-center mb-6 text-sky-400">Estadísticas de Progreso</h2>
+            
+            <div class="stats-section bg-slate-700/50 p-6 rounded-lg shadow-inner mb-6">
+                <h3 class="text-xl font-semibold text-sky-300 mb-4">Resumen Global</h3>
+                <dl class="grid grid-cols-2 gap-x-4 gap-y-2">
+                    <dt>Cuestionarios Intentados:</dt><dd id="stats-total-attempted">0</dd>
+                    <dt>Cuestionarios Completados:</dt><dd id="stats-total-completed">0</dd>
+                    <dt>Promedio Aprobación (Completados):</dt><dd id="stats-avg-approval">N/A</dd>
+                    <dt>Total Preguntas Respondidas:</dt><dd id="stats-total-questions-answered">0</dd>
+                    <dt>Total Aciertos Globales:</dt><dd id="stats-total-correct-answers">0</dd>
+                </dl>
+            </div>
+
+            <div id="quiz-specific-stats-container" class="space-y-4 mb-6">
+                <h3 class="text-xl font-semibold text-sky-300 mb-3">Detalle por Cuestionario:</h3>
+                </div>
+
+            <div class="flex flex-col sm:flex-row gap-4 mt-8">
+                <button onclick="navigateToInitialView()" class="w-full sm:w-auto flex-1 bg-sky-500 hover:bg-sky-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md">
+                    Volver al Menú
+                </button>
+                <button onclick="confirmClearAllProgress()" class="w-full sm:w-auto flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg shadow-md">
+                    Borrar Todo el Progreso
+                </button>
+            </div>
+        </div>
+
+        <div id="quiz-view" class="hidden">
+             <div class="flex justify-between items-center mb-6">
                 <h2 id="quiz-title" class="text-2xl font-bold text-sky-400 truncate mr-4">Cuestionario</h2>
                 <div class="text-lg whitespace-nowrap">
                     <span class="font-semibold">Pregunta:</span> <span id="question-counter" class="text-slate-300"></span>
@@ -73,24 +136,24 @@
             </div>
 
             <div id="options-container" class="space-y-3 mb-6">
-                </div>
+            </div>
             
             <div id="feedback-message" class="my-4 text-center font-medium h-6"></div>
             
             <div class="mt-6 pt-4 border-t border-slate-700">
                 <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-                    <button id="prev-question-button" onclick="previousQuestion()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 w-full sm:w-auto">
+                    <button id="prev-question-button" onclick="previousQuestion()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md w-full sm:w-auto">
                         Anterior
                     </button>
                     <div class="text-lg font-semibold order-first sm:order-none sm:mx-auto">
                         Puntuación: <span id="score" class="text-green-400">0</span>
                     </div>
-                    <button id="next-question-button" onclick="nextQuestion()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 w-full sm:w-auto">
+                    <button id="next-question-button" onclick="nextQuestion()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md w-full sm:w-auto">
                         Siguiente
                     </button>
                 </div>
-                <button onclick="restartApp()" class="mt-6 w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-opacity-75">
-                    Volver al Menú Principal
+                <button onclick="exitQuiz()" class="mt-6 w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md">
+                    Guardar y Salir al Menú
                 </button>
             </div>
         </div>
@@ -102,10 +165,22 @@
             <p id="final-score" class="text-5xl font-bold text-green-400 mb-2"></p>
             <p id="final-percentage" class="text-2xl text-slate-300 mb-4"></p>
             <p id="approval-message" class="text-2xl font-bold mb-8"></p>
-            <button onclick="restartApp()" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-opacity-75">
+            <button onclick="restartApp()" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md">
                 Volver al Menú Principal
             </button>
         </div>
+
+        <div id="confirmation-modal" class="modal-overlay hidden">
+            <div class="modal-content">
+                <h3 class="text-xl font-semibold text-sky-300 mb-4">Confirmar Acción</h3>
+                <p id="modal-message" class="text-slate-300 mb-6">¿Estás seguro?</p>
+                <div class="flex justify-end space-x-3">
+                    <button id="modal-cancel-button" class="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg">Cancelar</button>
+                    <button id="modal-confirm-button" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg">Confirmar</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -338,43 +413,42 @@
             }
         };
 
-        // --- Estado de la Aplicación ---
         let currentQuiz = [];
-        let currentQuizKey = ''; // Clave del cuestionario actual para localStorage
+        let currentQuizKey = ''; 
         let currentQuizName = ''; 
         let currentQuestionIndex = 0;
-        let questionStates = []; // Almacena { selectedOption: string, isCorrect: boolean, attempted: boolean } para cada pregunta
+        let questionStates = {}; 
 
-        // --- Elementos del DOM (se asignarán en DOMContentLoaded) ---
-        let initialView, quizView, resultsView, quizSelectionContainer;
+        let initialView, quizView, resultsView, statisticsView, quizSelectionContainer, modalOverlay, modalMessage, modalConfirmButton, modalCancelButton;
         let quizTitleElement, questionCounterElement, questionTextElement, optionsContainer;
         let scoreElement, prevQuestionButton, nextQuestionButton;
         let completedQuizNameElement, finalScoreElement, finalPercentageElement, approvalMessageElement;
         let feedbackMessageElement;
-        
-        /**
-         * Inicializa el estado para un nuevo intento de cuestionario.
-         */
-        function initializeQuizAttemptState() {
-            questionStates = currentQuiz.map(() => ({
-                selectedOption: null,
-                isCorrect: false,
-                attempted: false 
-            }));
-            currentQuestionIndex = 0;
-        }
-        
-        /**
-         * Calcula la puntuación actual basada en el estado de las preguntas.
-         */
-        function calculateCurrentScore() {
-            return questionStates.reduce((acc, state) => acc + (state.attempted && state.isCorrect ? 1 : 0), 0);
+        let statsTotalAttempted, statsTotalCompleted, statsAvgApproval, statsTotalQuestionsAnswered, statsTotalCorrectAnswers, quizSpecificStatsContainer;
+        let actionToConfirm = null;
+
+        function loadQuestionStatesFromStorage(quizKey) {
+            try {
+                const storedStates = localStorage.getItem(`questionStates_${quizKey}`);
+                return storedStates ? JSON.parse(storedStates) : {};
+            } catch (e) {
+                console.error("Error al cargar estados de localStorage para", quizKey, e);
+                return {};
+            }
         }
 
-        /**
-         * Inicia un cuestionario seleccionado.
-         * @param {string} quizKey - La clave del cuestionario en preloadedQuizzes.
-         */
+        function saveQuestionStatesToStorage(quizKey) {
+            try {
+                localStorage.setItem(`questionStates_${quizKey}`, JSON.stringify(questionStates));
+            } catch (e) {
+                console.error("Error al guardar estados en localStorage para", quizKey, e);
+            }
+        }
+        
+        function calculateCurrentScore() {
+            return Object.values(questionStates).reduce((acc, state) => acc + (state.attempted && state.isCorrect ? 1 : 0), 0);
+        }
+
         function startSelectedQuiz(quizKey) {
             const quizData = preloadedQuizzes[quizKey];
             if (!quizData || !quizData.questions || quizData.questions.length === 0) {
@@ -386,21 +460,16 @@
             currentQuizKey = quizKey;
             currentQuizName = quizData.name;
             
-            initializeQuizAttemptState();
+            questionStates = loadQuestionStatesFromStorage(quizKey); 
+            currentQuestionIndex = 0; 
             
             if (quizTitleElement) quizTitleElement.textContent = currentQuizName;
             
-            if (initialView) initialView.classList.add('hidden');
-            if (resultsView) resultsView.classList.add('hidden');
-            if (quizView) quizView.classList.remove('hidden');
-            
+            navigateToQuizView();
             displayQuestion();
             updateScoreDisplay();
         }
         
-        /**
-         * Muestra la pregunta actual, opciones y estado (si ya fue respondida).
-         */
         function displayQuestion() {
             if (currentQuestionIndex < 0 || currentQuestionIndex >= currentQuiz.length) {
                 if (currentQuestionIndex >= currentQuiz.length && currentQuiz.length > 0) showResults();
@@ -408,7 +477,7 @@
             }
 
             const questionData = currentQuiz[currentQuestionIndex];
-            const qState = questionStates[currentQuestionIndex];
+            const qState = questionStates[questionData.id] || { attempted: false, selectedOption: null, isCorrect: false };
 
             if (!questionData || typeof questionData.question !== 'string' || !Array.isArray(questionData.options) || typeof questionData.correctAnswer !== 'string') {
                 if (feedbackMessageElement) {
@@ -425,8 +494,14 @@
             
             if (optionsContainer) optionsContainer.innerHTML = ''; 
             
-            const shuffledOptions = shuffleArray([...questionData.options]);
-            shuffledOptions.forEach(optionText => {
+            const displayOptionsOrder = qState.attempted && qState.optionsOrder ? qState.optionsOrder : shuffleArray([...questionData.options]);
+            if (!qState.attempted) { // Guardar el orden de las opciones solo si no ha sido intentada
+                 questionStates[questionData.id] = { ...qState, optionsOrder: displayOptionsOrder };
+                 saveQuestionStatesToStorage(currentQuizKey);
+            }
+
+
+            displayOptionsOrder.forEach(optionText => {
                 const button = document.createElement('button');
                 button.textContent = optionText;
                 button.className = 'option-button w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-3 px-4 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500';
@@ -461,45 +536,38 @@
             if (prevQuestionButton) prevQuestionButton.disabled = currentQuestionIndex === 0;
             if (nextQuestionButton) {
                 nextQuestionButton.textContent = (currentQuestionIndex === currentQuiz.length - 1) ? "Finalizar" : "Siguiente";
-                 if (currentQuestionIndex === currentQuiz.length - 1) {
+                if (currentQuestionIndex === currentQuiz.length - 1) { 
                     nextQuestionButton.disabled = !qState.attempted;
-                } else {
-                     // Habilitar "Siguiente" si la pregunta actual fue intentada, o si no es la última pregunta (para permitir saltar)
-                    nextQuestionButton.disabled = !qState.attempted && (currentQuestionIndex < currentQuiz.length -1);
-                    if (qState.attempted) nextQuestionButton.disabled = false;
+                } else { 
+                    nextQuestionButton.disabled = false; 
                 }
             }
             updateScoreDisplay();
         }
 
-        /**
-         * Maneja la selección de una respuesta.
-         * @param {string} selectedOptionText - El texto de la opción seleccionada.
-         */
         function selectAnswer(selectedOptionText) {
-            const qState = questionStates[currentQuestionIndex];
-            if (qState.attempted) return; 
-
             const questionData = currentQuiz[currentQuestionIndex];
-            qState.selectedOption = selectedOptionText;
-            qState.isCorrect = selectedOptionText === questionData.correctAnswer;
-            qState.attempted = true;
+            const qStateForId = questionStates[questionData.id] || {}; 
 
+            if (qStateForId.attempted) return; 
+
+            qStateForId.selectedOption = selectedOptionText;
+            qStateForId.isCorrect = selectedOptionText === questionData.correctAnswer;
+            qStateForId.attempted = true;
+            // Conservar optionsOrder si ya existía (de displayQuestion)
+            questionStates[questionData.id] = { ...qStateForId, optionsOrder: qStateForId.optionsOrder || questionData.options };
+
+
+            saveQuestionStatesToStorage(currentQuizKey);
             updateScoreDisplay();
             displayQuestion(); 
         }
         
-        /**
-         * Actualiza el contador de puntuación en la UI.
-         */
         function updateScoreDisplay() {
             const currentScore = calculateCurrentScore();
             if (scoreElement) scoreElement.textContent = currentScore;
         }
 
-        /**
-         * Navega a la pregunta anterior.
-         */
         function previousQuestion() {
             if (currentQuestionIndex > 0) {
                 currentQuestionIndex--;
@@ -507,26 +575,18 @@
             }
         }
 
-        /**
-         * Navega a la siguiente pregunta o muestra resultados.
-         */
         function nextQuestion() {
-            const qState = questionStates[currentQuestionIndex];
+            const questionData = currentQuiz[currentQuestionIndex];
+            const qState = questionStates[questionData.id] || { attempted: false };
+
             if (currentQuestionIndex < currentQuiz.length - 1) {
-                 // Permitir avanzar solo si la pregunta actual fue intentada O si se permite saltar (ajustar lógica de nextQuestionButton.disabled)
-                if (qState.attempted || true) { // true permite saltar, ajustar si es necesario
-                    currentQuestionIndex++;
-                    displayQuestion();
-                }
-            } else if (qState.attempted) { // Solo finalizar si la última pregunta fue intentada
+                 currentQuestionIndex++;
+                 displayQuestion();
+            } else if (qState.attempted) { 
                 showResults();
             }
         }
 
-
-        /**
-         * Muestra la pantalla de resultados, guarda el progreso.
-         */
         function showResults() {
             if (quizView) quizView.classList.add('hidden');
             if (resultsView) resultsView.classList.remove('hidden');
@@ -545,8 +605,7 @@
                 approvalMessageElement.className = `text-2xl font-bold mb-8 ${isApproved ? 'text-green-400' : 'text-red-400'}`;
             }
 
-            // Guardar progreso en localStorage
-            const progressData = {
+            const progressSummary = {
                 name: currentQuizName,
                 score: finalScoreValue,
                 totalQuestions: totalQuestions,
@@ -555,26 +614,35 @@
                 completed: true 
             };
             try {
-                localStorage.setItem(`quizProgress_${currentQuizKey}`, JSON.stringify(progressData));
+                localStorage.setItem(`quizProgressSummary_${currentQuizKey}`, JSON.stringify(progressSummary));
             } catch (e) {
-                console.error("Error al guardar en localStorage:", e);
+                console.error("Error al guardar resumen en localStorage:", e);
             }
         }
+        
+        function exitQuiz() {
+            // El progreso ya se guarda en cada selectAnswer con saveQuestionStatesToStorage
+            navigateToInitialView();
+        }
 
-        /**
-         * Reinicia la aplicación a la vista de selección de cuestionario.
-         */
-        function restartApp() {
+        function restartApp() { // Esta función ahora solo vuelve al menú principal
+            navigateToInitialView();
+        }
+        
+        function navigateToInitialView() {
             if (resultsView) resultsView.classList.add('hidden');
             if (quizView) quizView.classList.add('hidden');
+            if (statisticsView) statisticsView.classList.add('hidden');
             if (initialView) initialView.classList.remove('hidden');
             
+            // Limpiar variables de estado del cuestionario actual
             currentQuiz = [];
             currentQuizKey = '';
             currentQuizName = '';
-            questionStates = [];
+            questionStates = {}; 
             currentQuestionIndex = 0;
             
+            // Resetear elementos UI del cuestionario
             if (scoreElement) scoreElement.textContent = '0';
             if (questionCounterElement) questionCounterElement.textContent = '';
             if (questionTextElement) questionTextElement.textContent = '';
@@ -588,57 +656,58 @@
                 nextQuestionButton.disabled = true;
                 nextQuestionButton.textContent = "Siguiente";
             }
-            
             renderQuizSelectionScreen(); 
         }
 
-        /**
-         * Mezcla un array (Algoritmo Fisher-Yates).
-         */
         function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
+            let newArray = [...array]; // Crear una copia para no modificar el original
+            for (let i = newArray.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
             }
-            return array;
+            return newArray;
         }
         
-        /**
-         * Renderiza las tarjetas de selección de cuestionarios en la vista inicial,
-         * mostrando el progreso guardado si existe desde localStorage.
-         */
         function renderQuizSelectionScreen() {
-            if (!quizSelectionContainer) {
-                console.error("quizSelectionContainer no encontrado en el DOM.");
-                return;
-            }
+            if (!quizSelectionContainer) return;
             quizSelectionContainer.innerHTML = ''; 
 
             Object.entries(preloadedQuizzes).forEach(([quizKey, quizDetails]) => {
                 const card = document.createElement('div');
                 card.className = 'quiz-card bg-slate-700 p-4 rounded-lg shadow-lg flex flex-col justify-between transition-all hover:shadow-sky-500/30';
 
-                let progressHTML = '<p class="text-sm text-slate-400">Aún no completado.</p>';
+                let progressHTML = '<p class="text-sm text-slate-400">Aún no intentado.</p>';
                 let buttonText = "Comenzar";
                 
                 try {
-                    const savedProgressString = localStorage.getItem(`quizProgress_${quizKey}`);
-                    if (savedProgressString) {
-                        const progress = JSON.parse(savedProgressString);
-                        if (progress && progress.completed) { 
-                            const statusColor = progress.isApproved ? 'text-green-400' : 'text-red-400';
-                            const statusText = progress.isApproved ? 'Aprobado' : 'No Aprobado';
+                    const savedSummaryString = localStorage.getItem(`quizProgressSummary_${quizKey}`);
+                    if (savedSummaryString) {
+                        const summary = JSON.parse(savedSummaryString);
+                        if (summary && summary.completed) { 
+                            const statusColor = summary.isApproved ? 'text-green-400' : 'text-red-400';
+                            const statusText = summary.isApproved ? 'Aprobado' : 'No Aprobado';
                             progressHTML = `
-                                <p class="text-sm text-slate-300">Último Intento:</p>
+                                <p class="text-sm text-slate-300">Último Intento Completado:</p>
                                 <p class="font-semibold text-lg ${statusColor}">${statusText}</p>
-                                <p class="text-xs text-slate-400">${progress.score}/${progress.totalQuestions} (${progress.percentage}%)</p>
+                                <p class="text-xs text-slate-400">${summary.score}/${summary.totalQuestions} (${summary.percentage}%)</p>
                             `;
                             buttonText = "Reintentar";
+                        }
+                    } else { // Si no hay resumen, verificar si hay respuestas guardadas (progreso incompleto)
+                        const savedQuestionStates = localStorage.getItem(`questionStates_${quizKey}`);
+                        if (savedQuestionStates && Object.keys(JSON.parse(savedQuestionStates)).length > 0) {
+                             const states = JSON.parse(savedQuestionStates);
+                             const attemptedCount = Object.values(states).filter(s => s.attempted).length;
+                             if (attemptedCount > 0) {
+                                progressHTML = `<p class="text-sm text-slate-300">Progreso guardado (${attemptedCount}/${quizDetails.questions.length} respondidas).</p>`;
+                                buttonText = "Continuar";
+                             }
                         }
                     }
                 } catch(e) {
                     console.error("Error al leer progreso de localStorage para", quizKey, e);
-                    localStorage.removeItem(`quizProgress_${quizKey}`); 
+                    localStorage.removeItem(`quizProgressSummary_${quizKey}`); 
+                    localStorage.removeItem(`questionStates_${quizKey}`); 
                 }
 
                 const colors = ['bg-sky-500 hover:bg-sky-600 focus:ring-sky-400', 'bg-teal-500 hover:bg-teal-600 focus:ring-teal-400', 'bg-indigo-500 hover:bg-indigo-600 focus:ring-indigo-400', 'bg-pink-500 hover:bg-pink-600 focus:ring-pink-400', 'bg-purple-500 hover:bg-purple-600 focus:ring-purple-400', 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400'];
@@ -658,10 +727,91 @@
             });
         }
 
+        // --- Funciones de Estadísticas ---
+        function showStatisticsView() {
+            if (initialView) initialView.classList.add('hidden');
+            if (statisticsView) statisticsView.classList.remove('hidden');
+            calculateAndDisplayGlobalStats();
+        }
+
+        function calculateAndDisplayGlobalStats() {
+            let totalAttemptedQuizzes = 0;
+            let totalCompletedQuizzes = 0;
+            let totalPercentageSum = 0;
+            let totalQuestionsAnsweredEver = 0;
+            let totalCorrectAnswersEver = 0;
+
+            if (quizSpecificStatsContainer) quizSpecificStatsContainer.innerHTML = '<h3 class="text-xl font-semibold text-sky-300 mb-3">Detalle por Cuestionario:</h3>'; // Reset
+
+            Object.keys(preloadedQuizzes).forEach(quizKey => {
+                const quizDetails = preloadedQuizzes[quizKey];
+                const summaryString = localStorage.getItem(`quizProgressSummary_${quizKey}`);
+                const statesString = localStorage.getItem(`questionStates_${quizKey}`);
+                let attemptedThisQuiz = false;
+                let detailHTML = `<div class="bg-slate-700 p-3 rounded-md shadow"><p class="font-medium text-sky-200">${quizDetails.name}</p>`;
+
+                if (statesString) {
+                    const states = JSON.parse(statesString);
+                    const answeredInThis = Object.values(states).filter(s => s.attempted).length;
+                    if (answeredInThis > 0) {
+                        attemptedThisQuiz = true;
+                        totalAttemptedQuizzes++;
+                        totalQuestionsAnsweredEver += answeredInThis;
+                        const correctInThis = Object.values(states).filter(s => s.isCorrect).length;
+                        totalCorrectAnswersEver += correctInThis;
+                        detailHTML += `<p class="text-xs text-slate-400">Respondidas: ${answeredInThis}/${quizDetails.questions.length}, Aciertos: ${correctInThis}</p>`;
+                    }
+                }
+
+                if (summaryString) {
+                    const summary = JSON.parse(summaryString);
+                    if (summary.completed) {
+                        if(!attemptedThisQuiz) totalAttemptedQuizzes++; // Contar como intentado si está completo pero no en statesString (caso raro)
+                        totalCompletedQuizzes++;
+                        totalPercentageSum += summary.percentage;
+                        const statusColor = summary.isApproved ? 'text-green-400' : 'text-red-400';
+                        detailHTML += `<p class="text-xs ${statusColor}">Completado: ${summary.isApproved ? 'Aprobado' : 'No Aprobado'} (${summary.percentage}%)</p>`;
+                    }
+                }
+                
+                if (!attemptedThisQuiz && !summaryString) {
+                     detailHTML += `<p class="text-xs text-slate-500">Aún no intentado.</p>`;
+                }
+                detailHTML += `</div>`;
+                if (quizSpecificStatsContainer) quizSpecificStatsContainer.innerHTML += detailHTML;
+            });
+
+            if (statsTotalAttempted) statsTotalAttempted.textContent = totalAttemptedQuizzes;
+            if (statsTotalCompleted) statsTotalCompleted.textContent = totalCompletedQuizzes;
+            if (statsAvgApproval) statsAvgApproval.textContent = totalCompletedQuizzes > 0 ? `${Math.round(totalPercentageSum / totalCompletedQuizzes)}%` : "N/A";
+            if (statsTotalQuestionsAnswered) statsTotalQuestionsAnswered.textContent = totalQuestionsAnsweredEver;
+            if (statsTotalCorrectAnswers) statsTotalCorrectAnswers.textContent = totalCorrectAnswersEver;
+        }
+        
+        function confirmClearAllProgress() {
+            actionToConfirm = clearAllProgress;
+            if (modalMessage) modalMessage.textContent = "¿Estás seguro de que quieres borrar todo tu progreso? Esta acción no se puede deshacer.";
+            if (modalOverlay) modalOverlay.classList.remove('hidden');
+        }
+
+        function clearAllProgress() {
+            Object.keys(preloadedQuizzes).forEach(quizKey => {
+                localStorage.removeItem(`quizProgressSummary_${quizKey}`);
+                localStorage.removeItem(`questionStates_${quizKey}`);
+            });
+            if (modalOverlay) modalOverlay.classList.add('hidden');
+            actionToConfirm = null;
+            calculateAndDisplayGlobalStats(); // Actualizar vista de estadísticas
+            renderQuizSelectionScreen(); // Actualizar vista inicial
+            alert("Todo el progreso ha sido borrado.");
+        }
+
+
         document.addEventListener('DOMContentLoaded', () => {
             initialView = document.getElementById('initial-view');
             quizView = document.getElementById('quiz-view');
             resultsView = document.getElementById('results-view');
+            statisticsView = document.getElementById('statistics-view');
             quizSelectionContainer = document.getElementById('quiz-selection-container');
 
             quizTitleElement = document.getElementById('quiz-title');
@@ -678,11 +828,34 @@
             approvalMessageElement = document.getElementById('approval-message');
             
             feedbackMessageElement = document.getElementById('feedback-message');
+
+            statsTotalAttempted = document.getElementById('stats-total-attempted');
+            statsTotalCompleted = document.getElementById('stats-total-completed');
+            statsAvgApproval = document.getElementById('stats-avg-approval');
+            statsTotalQuestionsAnswered = document.getElementById('stats-total-questions-answered');
+            statsTotalCorrectAnswers = document.getElementById('stats-total-correct-answers');
+            quizSpecificStatsContainer = document.getElementById('quiz-specific-stats-container');
+
+            modalOverlay = document.getElementById('confirmation-modal');
+            modalMessage = document.getElementById('modal-message');
+            modalConfirmButton = document.getElementById('modal-confirm-button');
+            modalCancelButton = document.getElementById('modal-cancel-button');
+
+            if(modalConfirmButton) modalConfirmButton.onclick = () => {
+                if (actionToConfirm) actionToConfirm();
+            };
+            if(modalCancelButton) modalCancelButton.onclick = () => {
+                if (modalOverlay) modalOverlay.classList.add('hidden');
+                actionToConfirm = null;
+            };
             
             renderQuizSelectionScreen(); 
         });
     </script>
 </body>
 </html>
+
+  
+     
 
 
