@@ -606,17 +606,17 @@
             const loadedStates = loadQuestionStatesFromStorage(quizKey);
             
             const summary = getQuizSummary(quizKey);
-            let buttonTextFromDOM = "Comenzar"; // Valor por defecto
-            const buttonElement = document.querySelector(`button[onclick="startSelectedQuiz('${quizKey}', ${isContinuation})"]`); // Puede ser null si el DOM no está listo
+            let buttonTextFromDOM = "Comenzar"; 
+            const buttonElement = quizSelectionContainer.querySelector(`button[onclick="startSelectedQuiz('${quizKey}', ${isContinuation})"]`);
             if (buttonElement) {
                  buttonTextFromDOM = buttonElement.textContent.trim();
             }
-
 
             if (!isContinuation || buttonTextFromDOM === "Reintentar") { 
                 questionStates = {}; 
                 if (buttonTextFromDOM === "Reintentar") {
                     localStorage.removeItem(`quizProgressSummary_${quizKey}`);
+                    localStorage.removeItem(`questionStates_${quizKey}`); 
                 }
             } else {
                  questionStates = loadedStates;
@@ -951,8 +951,6 @@
                     if (!summary || !summary.completed) { 
                          globalTotalAttemptedQuizzes++; 
                     }
-                    // Sumar al total global solo una vez por cuestionario intentado
-                    // (basado en si hay estados, ya que el summary solo cuenta completados)
                     globalTotalQuestionsAnsweredEver += answeredInThis; 
                     globalTotalCorrectAnswersEver += correctInThis;
                 }
