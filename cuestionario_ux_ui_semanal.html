@@ -445,8 +445,6 @@
         }
         
         function calculateCurrentScore() {
-            // Calcula el puntaje basado en las preguntas *del intento actual* (currentQuiz)
-            // y sus estados guardados en questionStates (que es por ID)
             let score = 0;
             currentQuiz.forEach(question => {
                 const qState = questionStates[question.id];
@@ -468,13 +466,12 @@
             currentQuizKey = quizKey;
             currentQuizName = quizData.name;
             
-            // Carga los estados de las preguntas para ESTE cuestionario.
-            // Si es un reintento, las respuestas anteriores de ESTE cuestionario se mostrarán.
             questionStates = loadQuestionStatesFromStorage(quizKey); 
             currentQuestionIndex = 0; 
             
             if (quizTitleElement) quizTitleElement.textContent = currentQuizName;
             
+            // Correctamente mostrar quizView y ocultar otras
             if (initialView) initialView.classList.add('hidden');
             if (resultsView) resultsView.classList.add('hidden');
             if (statisticsView) statisticsView.classList.add('hidden');
@@ -492,8 +489,7 @@
                 return;
             }
 
-            const questionData = currentQuiz[currentQuestionIndex]; // Pregunta actual del array mezclado
-            // Obtener el estado usando el ID único de la pregunta
+            const questionData = currentQuiz[currentQuestionIndex]; 
             const qState = questionStates[questionData.id] || { attempted: false, selectedOption: null, isCorrect: false, optionsOrder: null };
 
 
@@ -512,13 +508,9 @@
             
             if (optionsContainer) optionsContainer.innerHTML = ''; 
             
-            // Usar el orden guardado si existe, sino mezclar y guardar
             const displayOptionsOrder = qState.optionsOrder || shuffleArray([...questionData.options]);
             if (!qState.optionsOrder && !qState.attempted) { 
-                 // Guardar el orden de opciones solo la primera vez que se muestra Y no ha sido intentada
-                 // Esto se hace para que si navega atrás/adelante sin responder, el orden se mantenga
                  questionStates[questionData.id] = { ...qState, optionsOrder: displayOptionsOrder };
-                 // No es necesario guardar en localStorage aquí todavía, solo al responder.
             }
 
 
@@ -568,7 +560,6 @@
 
         function selectAnswer(selectedOptionText) {
             const questionData = currentQuiz[currentQuestionIndex];
-            // Asegurarse de que qStateForId se inicialice correctamente si no existe para este ID
             const qStateForId = questionStates[questionData.id] || { optionsOrder: questionData.optionsOrder || shuffleArray([...questionData.options]) };
 
             if (qStateForId.attempted) return; 
@@ -576,7 +567,6 @@
             qStateForId.selectedOption = selectedOptionText;
             qStateForId.isCorrect = selectedOptionText === questionData.correctAnswer;
             qStateForId.attempted = true;
-            // Mantener el optionsOrder que se usó para mostrar las opciones
             questionStates[questionData.id] = qStateForId; 
 
 
@@ -638,7 +628,6 @@
             };
             try {
                 localStorage.setItem(`quizProgressSummary_${currentQuizKey}`, JSON.stringify(progressSummary));
-                // Guardar el estado de todas las preguntas de este cuestionario al completarlo
                 saveQuestionStatesToStorage(currentQuizKey); 
             } catch (e) {
                 console.error("Error al guardar resumen en localStorage:", e);
@@ -769,7 +758,7 @@
                 const quizDetails = preloadedQuizzes[quizKey];
                 const summaryString = localStorage.getItem(`quizProgressSummary_${quizKey}`);
                 const statesString = localStorage.getItem(`questionStates_${quizKey}`);
-                let attemptedThisQuiz = false; // Si hay algún estado o resumen
+                let attemptedThisQuiz = false; 
                 let completedThisQuiz = false;
                 let detailHTML = `<div class="bg-slate-700 p-3 rounded-md shadow mb-3"><p class="font-medium text-sky-200">${quizDetails.name}</p>`;
 
@@ -779,12 +768,11 @@
                 if (statesString) {
                     try {
                         const states = JSON.parse(statesString);
-                        answeredInThis = Object.values(states).filter(s => s.attempted).length;
+                        const attemptedStates = Object.values(states).filter(s => s.attempted);
+                        answeredInThis = attemptedStates.length;
                         if (answeredInThis > 0) {
                             attemptedThisQuiz = true;
-                            totalQuestionsAnsweredEver += answeredInThis; // Sumar solo una vez
-                            correctInThis = Object.values(states).filter(s => s.isCorrect).length;
-                            totalCorrectAnswersEver += correctInThis; // Sumar solo una vez
+                            correctInThis = attemptedStates.filter(s => s.isCorrect).length;
                             detailHTML += `<p class="text-xs text-slate-400">Respondidas: ${answeredInThis}/${quizDetails.questions.length}, Aciertos: ${correctInThis}</p>`;
                         }
                     } catch (e) { console.error("Error parsing statesString for stats", quizKey, e); }
@@ -794,32 +782,61 @@
                      try {
                         const summary = JSON.parse(summaryString);
                         if (summary.completed) {
-                            attemptedThisQuiz = true; // Si está completo, definitivamente fue intentado
+                            attemptedThisQuiz = true; 
                             completedThisQuiz = true;
                             totalCompletedQuizzes++;
                             totalPercentageSum += summary.percentage;
+                            // Si hay resumen completo, usar esos datos para el detalle ya que son los del último intento finalizado
+                            answeredInThis = summary.totalQuestions; // Asumir que todas fueron respondidas si se completó
+                            correctInThis = summary.score;
                             const statusColor = summary.isApproved ? 'text-green-400' : 'text-red-400';
-                            detailHTML += `<p class="text-xs ${statusColor}">Completado: ${summary.isApproved ? 'Aprobado' : 'No Aprobado'} (${summary.percentage}%)</p>`;
+                            detailHTML = `<div class="bg-slate-700 p-3 rounded-md shadow mb-3"><p class="font-medium text-sky-200">${quizDetails.name}</p>
+                                          <p class="text-xs text-slate-400">Respondidas: ${answeredInThis}/${quizDetails.questions.length}, Aciertos: ${correctInThis}</p>
+                                          <p class="text-xs ${statusColor}">Completado: ${summary.isApproved ? 'Aprobado' : 'No Aprobado'} (${summary.percentage}%)</p>`;
                         }
                     } catch (e) { console.error("Error parsing summaryString for stats", quizKey, e); }
                 }
                 
                 if (attemptedThisQuiz) { 
                     totalAttemptedQuizzes++;
+                    // Asegurar que no se sumen dos veces si hay estados Y resumen completo
+                    if (!completedThisQuiz) { // Si no se completó pero se intentó
+                         totalQuestionsAnsweredEver += answeredInThis;
+                         totalCorrectAnswersEver += correctInThis;
+                    } else { // Si se completó, el resumen ya tiene los totales de ese intento
+                         totalQuestionsAnsweredEver += preloadedQuizzes[quizKey].questions.length; // Asumir todas respondidas al completar
+                         totalCorrectAnswersEver += JSON.parse(summaryString).score;
+                    }
                 }
 
-                if (!attemptedThisQuiz) { // Ni estados ni resumen
+
+                if (!attemptedThisQuiz) { 
                      detailHTML += `<p class="text-xs text-slate-500">Aún no intentado.</p>`;
                 }
                 detailHTML += `</div>`;
                 if (quizSpecificStatsContainer) quizSpecificStatsContainer.innerHTML += detailHTML;
             });
+            
+            // Recalcular totales globales para evitar doble conteo
+            let globalAnswered = 0;
+            let globalCorrect = 0;
+            Object.keys(preloadedQuizzes).forEach(quizKey => {
+                const statesString = localStorage.getItem(`questionStates_${quizKey}`);
+                if (statesString) {
+                    try {
+                        const states = JSON.parse(statesString);
+                        globalAnswered += Object.values(states).filter(s => s.attempted).length;
+                        globalCorrect += Object.values(states).filter(s => s.isCorrect).length;
+                    } catch(e) {/* ignore */}
+                }
+            });
+
 
             if (statsTotalAttempted) statsTotalAttempted.textContent = totalAttemptedQuizzes;
             if (statsTotalCompleted) statsTotalCompleted.textContent = totalCompletedQuizzes;
             if (statsAvgApproval) statsAvgApproval.textContent = totalCompletedQuizzes > 0 ? `${Math.round(totalPercentageSum / totalCompletedQuizzes)}%` : "N/A";
-            if (statsTotalQuestionsAnswered) statsTotalQuestionsAnswered.textContent = totalQuestionsAnsweredEver;
-            if (statsTotalCorrectAnswers) statsTotalCorrectAnswers.textContent = totalCorrectAnswersEver;
+            if (statsTotalQuestionsAnswered) statsTotalQuestionsAnswered.textContent = globalAnswered;
+            if (statsTotalCorrectAnswers) statsTotalCorrectAnswers.textContent = globalCorrect;
         }
         
         function confirmClearAllProgress() {
@@ -888,6 +905,8 @@
     </script>
 </body>
 </html>
+
+   
 
     
   
