@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cuestionario UX/UI con Progreso</title>
+    <title>Cuestionario UX/UI con Progreso Persistente</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="text/javascript">document.oncontextmenu = function(){return false;}</script>'
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
             color: white !important;
             border-color: #dc2626 !important; /* red-600 */
         }
-        .disabled-option, .api-button:disabled, button:disabled {
+        .disabled-option, button:disabled {
             pointer-events: none;
             opacity: 0.7;
         }
@@ -45,11 +45,8 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
-        .api-button {
-             transition: background-color 0.3s, opacity 0.3s;
-        }
         .quiz-card {
-            min-height: 180px; /* Asegura altura mínima para consistencia */
+            min-height: 180px; 
         }
     </style>
 </head>
@@ -79,14 +76,6 @@
                 </div>
             
             <div id="feedback-message" class="my-4 text-center font-medium h-6"></div>
-
-            <div id="explanation-section" class="my-4 text-center hidden">
-                <button id="explanation-button" onclick="fetchExplanation()" class="api-button bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md text-sm">
-                    ✨ Explicar Respuesta
-                </button>
-                <div id="api-loading-explanation" class="hidden mt-2 text-sm text-cyan-300">Generando explicación...</div>
-                <div id="explanation-container" class="mt-2 text-sm text-cyan-200 bg-slate-700/80 p-3 rounded-md shadow-inner min-h-[20px] hidden"></div>
-            </div>
             
             <div class="mt-6 pt-4 border-t border-slate-700">
                 <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
@@ -351,20 +340,20 @@
 
         // --- Estado de la Aplicación ---
         let currentQuiz = [];
-        let currentQuizKey = ''; // Clave del cuestionario actual para sessionStorage
+        let currentQuizKey = ''; // Clave del cuestionario actual para localStorage
         let currentQuizName = ''; 
         let currentQuestionIndex = 0;
-        let questionStates = []; // Almacena { selectedOption: string, isCorrect: boolean } para cada pregunta del intento actual
+        let questionStates = []; // Almacena { selectedOption: string, isCorrect: boolean, attempted: boolean } para cada pregunta
 
         // --- Elementos del DOM (se asignarán en DOMContentLoaded) ---
         let initialView, quizView, resultsView, quizSelectionContainer;
         let quizTitleElement, questionCounterElement, questionTextElement, optionsContainer;
         let scoreElement, prevQuestionButton, nextQuestionButton;
         let completedQuizNameElement, finalScoreElement, finalPercentageElement, approvalMessageElement;
-        let feedbackMessageElement, explanationSection, explanationButton, apiLoadingExplanation, explanationContainer;
-
+        let feedbackMessageElement;
+        
         /**
-         * Inicializa el estado de un nuevo intento de cuestionario.
+         * Inicializa el estado para un nuevo intento de cuestionario.
          */
         function initializeQuizAttemptState() {
             questionStates = currentQuiz.map(() => ({
@@ -373,18 +362,17 @@
                 attempted: false 
             }));
             currentQuestionIndex = 0;
-            // El score se calcula dinámicamente basado en questionStates
         }
         
         /**
-         * Calcula el puntaje actual basado en questionStates.
+         * Calcula la puntuación actual basada en el estado de las preguntas.
          */
         function calculateCurrentScore() {
-            return questionStates.reduce((acc, state) => acc + (state.isCorrect ? 1 : 0), 0);
+            return questionStates.reduce((acc, state) => acc + (state.attempted && state.isCorrect ? 1 : 0), 0);
         }
 
         /**
-         * Inicia un cuestionario.
+         * Inicia un cuestionario seleccionado.
          * @param {string} quizKey - La clave del cuestionario en preloadedQuizzes.
          */
         function startSelectedQuiz(quizKey) {
@@ -398,7 +386,7 @@
             currentQuizKey = quizKey;
             currentQuizName = quizData.name;
             
-            initializeQuizAttemptState(); // Reinicia el estado para un nuevo intento
+            initializeQuizAttemptState();
             
             if (quizTitleElement) quizTitleElement.textContent = currentQuizName;
             
@@ -407,7 +395,7 @@
             if (quizView) quizView.classList.remove('hidden');
             
             displayQuestion();
-            updateScoreDisplay(); // Mostrar score inicial (0)
+            updateScoreDisplay();
         }
         
         /**
@@ -415,13 +403,22 @@
          */
         function displayQuestion() {
             if (currentQuestionIndex < 0 || currentQuestionIndex >= currentQuiz.length) {
-                console.error("Índice de pregunta fuera de rango:", currentQuestionIndex);
                 if (currentQuestionIndex >= currentQuiz.length && currentQuiz.length > 0) showResults();
                 return;
             }
 
             const questionData = currentQuiz[currentQuestionIndex];
             const qState = questionStates[currentQuestionIndex];
+
+            if (!questionData || typeof questionData.question !== 'string' || !Array.isArray(questionData.options) || typeof questionData.correctAnswer !== 'string') {
+                if (feedbackMessageElement) {
+                    feedbackMessageElement.textContent = 'Error: Pregunta mal formada. Saltando...';
+                    feedbackMessageElement.className = 'my-4 text-center font-medium h-6 text-red-400';
+                }
+                currentQuestionIndex++;
+                setTimeout(() => displayQuestion(), 1500);
+                return;
+            }
 
             if (questionTextElement) questionTextElement.textContent = questionData.question;
             if (questionCounterElement) questionCounterElement.textContent = `${currentQuestionIndex + 1} de ${currentQuiz.length}`;
@@ -454,29 +451,22 @@
                     feedbackMessageElement.textContent = qState.isCorrect ? '¡Correcto!' : `Incorrecto. La respuesta correcta es: ${questionData.correctAnswer}`;
                     feedbackMessageElement.className = `my-4 text-center font-medium h-6 ${qState.isCorrect ? 'text-green-400' : 'text-red-400'}`;
                 }
-                if (explanationSection) explanationSection.classList.remove('hidden');
-                if (explanationButton) {
-                    explanationButton.classList.remove('hidden');
-                    explanationButton.disabled = false; 
-                }
-                if (explanationContainer) { // Limpiar explicación anterior si existe
-                    explanationContainer.innerHTML = '';
-                    explanationContainer.classList.add('hidden');
-                }
             } else {
                 if (feedbackMessageElement) {
                     feedbackMessageElement.textContent = '';
                     feedbackMessageElement.className = 'my-4 text-center font-medium h-6';
                 }
-                if (explanationSection) explanationSection.classList.add('hidden');
             }
             
             if (prevQuestionButton) prevQuestionButton.disabled = currentQuestionIndex === 0;
             if (nextQuestionButton) {
                 nextQuestionButton.textContent = (currentQuestionIndex === currentQuiz.length - 1) ? "Finalizar" : "Siguiente";
-                nextQuestionButton.disabled = !qState.attempted && (currentQuestionIndex < currentQuiz.length -1);
-                 if (currentQuestionIndex === currentQuiz.length - 1 && !qState.attempted) {
-                    nextQuestionButton.disabled = true; // Deshabilitar Finalizar si la última no está respondida
+                 if (currentQuestionIndex === currentQuiz.length - 1) {
+                    nextQuestionButton.disabled = !qState.attempted;
+                } else {
+                     // Habilitar "Siguiente" si la pregunta actual fue intentada, o si no es la última pregunta (para permitir saltar)
+                    nextQuestionButton.disabled = !qState.attempted && (currentQuestionIndex < currentQuiz.length -1);
+                    if (qState.attempted) nextQuestionButton.disabled = false;
                 }
             }
             updateScoreDisplay();
@@ -488,7 +478,7 @@
          */
         function selectAnswer(selectedOptionText) {
             const qState = questionStates[currentQuestionIndex];
-            if (qState.attempted) return; // No permitir cambiar respuesta
+            if (qState.attempted) return; 
 
             const questionData = currentQuiz[currentQuestionIndex];
             qState.selectedOption = selectedOptionText;
@@ -496,7 +486,7 @@
             qState.attempted = true;
 
             updateScoreDisplay();
-            displayQuestion(); // Re-renderizar para mostrar estado y feedback
+            displayQuestion(); 
         }
         
         /**
@@ -513,10 +503,6 @@
         function previousQuestion() {
             if (currentQuestionIndex > 0) {
                 currentQuestionIndex--;
-                if (explanationContainer) explanationContainer.innerHTML = ''; // Limpiar explicación
-                if (explanationContainer) explanationContainer.classList.add('hidden');
-                if (apiLoadingExplanation) apiLoadingExplanation.classList.add('hidden');
-                if (explanationButton) explanationButton.disabled = false;
                 displayQuestion();
             }
         }
@@ -525,17 +511,18 @@
          * Navega a la siguiente pregunta o muestra resultados.
          */
         function nextQuestion() {
+            const qState = questionStates[currentQuestionIndex];
             if (currentQuestionIndex < currentQuiz.length - 1) {
-                currentQuestionIndex++;
-                if (explanationContainer) explanationContainer.innerHTML = ''; // Limpiar explicación
-                if (explanationContainer) explanationContainer.classList.add('hidden');
-                if (apiLoadingExplanation) apiLoadingExplanation.classList.add('hidden');
-                if (explanationButton) explanationButton.disabled = false;
-                displayQuestion();
-            } else {
+                 // Permitir avanzar solo si la pregunta actual fue intentada O si se permite saltar (ajustar lógica de nextQuestionButton.disabled)
+                if (qState.attempted || true) { // true permite saltar, ajustar si es necesario
+                    currentQuestionIndex++;
+                    displayQuestion();
+                }
+            } else if (qState.attempted) { // Solo finalizar si la última pregunta fue intentada
                 showResults();
             }
         }
+
 
         /**
          * Muestra la pantalla de resultados, guarda el progreso.
@@ -558,19 +545,19 @@
                 approvalMessageElement.className = `text-2xl font-bold mb-8 ${isApproved ? 'text-green-400' : 'text-red-400'}`;
             }
 
-            // Guardar progreso en sessionStorage
+            // Guardar progreso en localStorage
             const progressData = {
                 name: currentQuizName,
                 score: finalScoreValue,
                 totalQuestions: totalQuestions,
                 percentage: percentage,
                 isApproved: isApproved,
-                completed: true
+                completed: true 
             };
             try {
-                sessionStorage.setItem(`quizProgress_${currentQuizKey}`, JSON.stringify(progressData));
+                localStorage.setItem(`quizProgress_${currentQuizKey}`, JSON.stringify(progressData));
             } catch (e) {
-                console.error("Error al guardar en sessionStorage:", e);
+                console.error("Error al guardar en localStorage:", e);
             }
         }
 
@@ -587,9 +574,7 @@
             currentQuizName = '';
             questionStates = [];
             currentQuestionIndex = 0;
-            // score se recalcula, no necesita reset aquí
             
-            // Limpiar elementos de la UI del cuestionario
             if (scoreElement) scoreElement.textContent = '0';
             if (questionCounterElement) questionCounterElement.textContent = '';
             if (questionTextElement) questionTextElement.textContent = '';
@@ -604,13 +589,7 @@
                 nextQuestionButton.textContent = "Siguiente";
             }
             
-            if (explanationContainer) explanationContainer.innerHTML = '';
-            if (explanationContainer) explanationContainer.classList.add('hidden');
-            if (apiLoadingExplanation) apiLoadingExplanation.classList.add('hidden');
-            if (explanationButton) explanationButton.disabled = false; // Re-enable for next quiz
-            if (explanationSection) explanationSection.classList.add('hidden');
-
-            renderQuizSelectionScreen(); // Actualizar la vista inicial con el progreso guardado
+            renderQuizSelectionScreen(); 
         }
 
         /**
@@ -623,101 +602,55 @@
             }
             return array;
         }
-
-        const API_KEY = ""; 
-
-        async function callGeminiAPI(prompt) {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
-            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error("Error API Gemini:", response.status, errorData);
-                    return `Error API: ${errorData?.error?.message || response.statusText}`;
-                }
-                const result = await response.json();
-                if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
-                    return result.candidates[0].content.parts[0].text;
-                } else {
-                    console.error("Respuesta API Gemini inesperada:", result);
-                    return "No se pudo obtener respuesta del asistente.";
-                }
-            } catch (error) {
-                console.error("Error llamando API Gemini:", error);
-                return "Error de conexión. Intenta de nuevo.";
-            }
-        }
-
-        async function fetchExplanation() {
-            if (currentQuestionIndex < 0 || currentQuestionIndex >= currentQuiz.length) return;
-
-            const questionData = currentQuiz[currentQuestionIndex];
-            const questionText = questionData.question;
-            const localCorrectAnswer = questionData.correctAnswer; 
-            
-            const prompt = `Eres un asistente de cuestionarios útil. Explica brevemente (en 2-3 frases concisas) por qué la respuesta "${localCorrectAnswer}" es la correcta para la siguiente pregunta de UX/UI: "${questionText}".`;
-
-            if (explanationButton) explanationButton.disabled = true;
-            if (apiLoadingExplanation) apiLoadingExplanation.classList.remove('hidden');
-            if (explanationContainer) {
-                explanationContainer.innerHTML = '';
-                explanationContainer.classList.add('hidden');
-            }
-
-            const explanationText = await callGeminiAPI(prompt);
-
-            if (apiLoadingExplanation) apiLoadingExplanation.classList.add('hidden');
-            if (explanationContainer) {
-                explanationContainer.innerHTML = explanationText || "No se pudo generar la explicación.";
-                explanationContainer.classList.remove('hidden');
-            }
-        }
         
         /**
          * Renderiza las tarjetas de selección de cuestionarios en la vista inicial,
-         * mostrando el progreso guardado si existe.
+         * mostrando el progreso guardado si existe desde localStorage.
          */
         function renderQuizSelectionScreen() {
-            if (!quizSelectionContainer) return;
+            if (!quizSelectionContainer) {
+                console.error("quizSelectionContainer no encontrado en el DOM.");
+                return;
+            }
             quizSelectionContainer.innerHTML = ''; 
 
             Object.entries(preloadedQuizzes).forEach(([quizKey, quizDetails]) => {
                 const card = document.createElement('div');
                 card.className = 'quiz-card bg-slate-700 p-4 rounded-lg shadow-lg flex flex-col justify-between transition-all hover:shadow-sky-500/30';
 
-                let progressHTML = '<p class="text-slate-400">Aún no completado.</p>';
+                let progressHTML = '<p class="text-sm text-slate-400">Aún no completado.</p>';
                 let buttonText = "Comenzar";
                 
                 try {
-                    const savedProgressString = sessionStorage.getItem(`quizProgress_${quizKey}`);
+                    const savedProgressString = localStorage.getItem(`quizProgress_${quizKey}`);
                     if (savedProgressString) {
                         const progress = JSON.parse(savedProgressString);
-                        if (progress && progress.completed) {
+                        if (progress && progress.completed) { 
                             const statusColor = progress.isApproved ? 'text-green-400' : 'text-red-400';
+                            const statusText = progress.isApproved ? 'Aprobado' : 'No Aprobado';
                             progressHTML = `
-                                <p class="text-sm text-slate-400">Último Intento:</p>
-                                <p class="font-medium"><span class="${statusColor}">${progress.isApproved ? 'Aprobado' : 'No Aprobado'}</span> (${progress.percentage}%)</p>
-                                <p class="text-xs text-slate-500">${progress.score}/${progress.totalQuestions} correctas</p>
+                                <p class="text-sm text-slate-300">Último Intento:</p>
+                                <p class="font-semibold text-lg ${statusColor}">${statusText}</p>
+                                <p class="text-xs text-slate-400">${progress.score}/${progress.totalQuestions} (${progress.percentage}%)</p>
                             `;
                             buttonText = "Reintentar";
                         }
                     }
                 } catch(e) {
-                    console.error("Error al leer progreso de sessionStorage para", quizKey, e);
-                    sessionStorage.removeItem(`quizProgress_${quizKey}`); // Limpiar dato corrupto
+                    console.error("Error al leer progreso de localStorage para", quizKey, e);
+                    localStorage.removeItem(`quizProgress_${quizKey}`); 
                 }
+
+                const colors = ['bg-sky-500 hover:bg-sky-600 focus:ring-sky-400', 'bg-teal-500 hover:bg-teal-600 focus:ring-teal-400', 'bg-indigo-500 hover:bg-indigo-600 focus:ring-indigo-400', 'bg-pink-500 hover:bg-pink-600 focus:ring-pink-400', 'bg-purple-500 hover:bg-purple-600 focus:ring-purple-400', 'bg-yellow-500 hover:bg-yellow-600 focus:ring-yellow-400'];
+                const colorIndex = Object.keys(preloadedQuizzes).indexOf(quizKey) % colors.length;
+                const buttonColorClass = colors[colorIndex];
 
                 card.innerHTML = `
                     <div>
                         <h4 class="text-lg font-semibold text-sky-300 mb-2">${quizDetails.name}</h4>
-                        <div class="text-sm mb-3">${progressHTML}</div>
+                        <div class="text-sm mb-3 min-h-[60px]">${progressHTML}</div>
                     </div>
-                    <button onclick="startSelectedQuiz('${quizKey}')" class="mt-auto bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-opacity-75">
+                    <button onclick="startSelectedQuiz('${quizKey}')" class="mt-auto ${buttonColorClass} text-white font-semibold py-2 px-4 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-opacity-75">
                         ${buttonText}
                     </button>
                 `;
@@ -726,7 +659,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Asignar elementos del DOM aquí
             initialView = document.getElementById('initial-view');
             quizView = document.getElementById('quiz-view');
             resultsView = document.getElementById('results-view');
@@ -746,13 +678,11 @@
             approvalMessageElement = document.getElementById('approval-message');
             
             feedbackMessageElement = document.getElementById('feedback-message');
-            explanationSection = document.getElementById('explanation-section');
-            explanationButton = document.getElementById('explanation-button');
-            apiLoadingExplanation = document.getElementById('api-loading-explanation');
-            explanationContainer = document.getElementById('explanation-container');
             
-            renderQuizSelectionScreen(); // Llenar la pantalla inicial con los cuestionarios y su progreso
+            renderQuizSelectionScreen(); 
         });
     </script>
 </body>
 </html>
+
+
