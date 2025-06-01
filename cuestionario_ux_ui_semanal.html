@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" class="">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -11,19 +11,23 @@
         body {
             font-family: 'Inter', sans-serif;
             transition: background-color 0.3s, color 0.3s;
+            /* Tema Azulado Oscuro por defecto (cuando html no tiene .dark) */
+            background-image: linear-gradient(to bottom right, #0f172a, #1e293b); /* from-slate-900 to-slate-800 */
+            color: #e2e8f0; /* slate-200 */
         }
-        /* Light mode base (Tailwind handles dark mode with 'dark:' prefix) */
-        body {
-            background-color: #f3f4f6; /* gray-100 */
-            color: #1f2937; /* gray-800 */
-        }
+        /* Tema Negro Profundo (cuando html tiene .dark) */
         .dark body {
-            background-color: #111827; /* gray-900 */
-            color: #f3f4f6; /* gray-100 */
+            background-color: #000000; /* black */
+            color: #d1d5db; /* gray-300 */
         }
         
         #app-container {
             transition: background-color 0.3s;
+            /* Base para tema azulado oscuro */
+            background-color: #1e293b; /* slate-800 */
+        }
+        .dark #app-container {
+            background-color: #111827; /* gray-900 (más oscuro que slate-800) */
         }
 
         .option-button {
@@ -49,24 +53,25 @@
         ::-webkit-scrollbar {
             width: 8px;
         }
-        ::-webkit-scrollbar-track {
-            background: #e5e7eb; /* gray-200 */
+        ::-webkit-scrollbar-track { /* Para tema azulado (defecto) */
+            background: #334155; /* slate-700 */
+            border-radius: 10px;
         }
-        .dark ::-webkit-scrollbar-track {
-            background: #374151; /* gray-700 */
+        .dark ::-webkit-scrollbar-track { /* Para tema negro */
+            background: #1f2937; /* gray-800 */
         }
         ::-webkit-scrollbar-thumb {
-            background: #9ca3af; /* gray-400 */
+            background: #64748b; /* slate-500 */
             border-radius: 10px;
         }
         .dark ::-webkit-scrollbar-thumb {
-            background: #6b7280; /* gray-500 */
+            background: #4b5563; /* gray-600 */
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280; /* gray-500 */
+            background: #94a3b8; /* slate-400 */
         }
         .dark ::-webkit-scrollbar-thumb:hover {
-            background: #4b5563; /* gray-600 */
+            background: #6b7280; /* gray-500 */
         }
         .quiz-card {
             min-height: 180px; 
@@ -80,21 +85,24 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.75); /* Un poco más oscuro */
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 50;
         }
-        .modal-content {
+        .modal-content { /* Base para tema azulado */
+            background-color: #334155; /* slate-700 */
             padding: 2rem;
             border-radius: 0.75rem; 
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             width: 90%;
             max-width: 400px;
         }
+        .dark .modal-content { /* Para tema negro */
+            background-color: #1f2937; /* gray-800 */
+        }
 
-        /* Dark Mode Toggle Styles */
         .theme-switch-wrapper {
             display: flex;
             align-items: center;
@@ -103,18 +111,25 @@
             right: 1rem;
             z-index: 10;
         }
+        .theme-switch-wrapper span {
+            color: #9ca3af; /* gray-400 */
+        }
+        .dark .theme-switch-wrapper span {
+            color: #6b7280; /* gray-500 */
+        }
         .theme-switch {
             display: inline-block;
             height: 26px;
             position: relative;
             width: 50px;
             margin-left: 8px;
+            margin-right: 8px;
         }
         .theme-switch input {
             display:none;
         }
-        .slider {
-            background-color: #4b5563; /* gray-600 */
+        .slider { /* Estilo para el switch en tema azulado (defecto) */
+            background-color: #475569; /* slate-600 */
             bottom: 0;
             cursor: pointer;
             left: 0;
@@ -125,7 +140,7 @@
             border-radius: 26px;
         }
         .slider:before {
-            background-color: #fff;
+            background-color: #cbd5e1; /* slate-300 */
             bottom: 3px;
             content: "";
             height: 20px;
@@ -135,36 +150,33 @@
             width: 20px;
             border-radius: 50%;
         }
-        input:checked + .slider {
-            background-color: #3b82f6; /* blue-500 */
+        input:checked + .slider { /* Switch ON (tema negro profundo activo) */
+            background-color: #3b82f6; 
+        }
+        .dark input:checked + .slider { /* Asegurar que el switch ON se vea bien en tema negro */
+             background-color: #4f46e5; 
         }
         input:checked + .slider:before {
             transform: translateX(24px);
         }
-        .dark .slider {
-             background-color: #4f46e5; /* indigo-600 */
-        }
-         .dark input:checked + .slider {
-            background-color: #6366f1; /* indigo-500 */
-        }
     </style>
 </head>
-<body class="min-h-screen p-4 py-8 flex items-center justify-center bg-gray-100 dark:bg-slate-900 text-gray-800 dark:text-slate-100">
+<body class="min-h-screen p-4 py-8 flex items-center justify-center"> {/* Clases base de color eliminadas de aquí, se manejan en <style> y con .dark en <html> */}
 
     <div class="theme-switch-wrapper">
-        <span class="text-sm text-gray-600 dark:text-gray-400">☀️</span>
+        <span>Azulado</span>
         <label class="theme-switch" for="theme-toggle">
             <input type="checkbox" id="theme-toggle" />
             <span class="slider"></span>
         </label>
-        <span class="text-sm text-gray-600 dark:text-gray-400">🌙</span>
+        <span>Negro</span>
     </div>
 
-    <div id="app-container" class="bg-white dark:bg-slate-800 shadow-2xl rounded-xl p-6 md:p-10 w-full max-w-3xl transition-all duration-500">
+    <div id="app-container" class="shadow-2xl rounded-xl p-6 md:p-10 w-full max-w-3xl transition-all duration-500">
 
         <div id="initial-view">
-            <h1 class="text-3xl md:text-4xl font-bold text-center mb-8 text-sky-600 dark:text-sky-400">Cuestionarios UX/UI</h1>
-            <p class="text-center text-gray-600 dark:text-slate-300 mb-6">Selecciona un cuestionario para comenzar o revisa tu progreso:</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-center mb-8 text-sky-400">Cuestionarios UX/UI</h1>
+            <p class="text-center text-slate-300 mb-6">Selecciona un cuestionario para comenzar o revisa tu progreso:</p>
             <div id="quiz-selection-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             </div>
             <button onclick="showStatisticsView()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 px-6 rounded-lg shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75">
@@ -173,21 +185,21 @@
         </div>
 
         <div id="statistics-view" class="hidden">
-            <h2 class="text-3xl font-bold text-center mb-6 text-sky-600 dark:text-sky-400">Estadísticas de Progreso</h2>
+            <h2 class="text-3xl font-bold text-center mb-6 text-sky-400">Estadísticas de Progreso</h2>
             
-            <div class="stats-section bg-gray-50 dark:bg-slate-700/50 p-6 rounded-lg shadow-inner mb-6">
-                <h3 class="text-xl font-semibold text-sky-700 dark:text-sky-300 mb-4">Resumen Global</h3>
-                <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-gray-700 dark:text-slate-300">
-                    <dt>Cuestionarios Intentados:</dt><dd id="stats-total-attempted" class="dark:text-slate-100">0</dd>
-                    <dt>Cuestionarios Completados:</dt><dd id="stats-total-completed" class="dark:text-slate-100">0</dd>
-                    <dt>Promedio Aprobación (Completados):</dt><dd id="stats-avg-approval" class="dark:text-slate-100">N/A</dd>
-                    <dt>Total Preguntas Respondidas:</dt><dd id="stats-total-questions-answered" class="dark:text-slate-100">0</dd>
-                    <dt>Total Aciertos Globales:</dt><dd id="stats-total-correct-answers" class="dark:text-slate-100">0</dd>
+            <div class="stats-section bg-slate-700/50 dark:bg-gray-800/50 p-6 rounded-lg shadow-inner mb-6">
+                <h3 class="text-xl font-semibold text-sky-300 dark:text-sky-400 mb-4">Resumen Global</h3>
+                <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-slate-300 dark:text-gray-300">
+                    <dt>Cuestionarios Intentados:</dt><dd id="stats-total-attempted" class="text-slate-100 dark:text-gray-100">0</dd>
+                    <dt>Cuestionarios Completados:</dt><dd id="stats-total-completed" class="text-slate-100 dark:text-gray-100">0</dd>
+                    <dt>Promedio Aprobación (Completados):</dt><dd id="stats-avg-approval" class="text-slate-100 dark:text-gray-100">N/A</dd>
+                    <dt>Total Preguntas Respondidas:</dt><dd id="stats-total-questions-answered" class="text-slate-100 dark:text-gray-100">0</dd>
+                    <dt>Total Aciertos Globales:</dt><dd id="stats-total-correct-answers" class="text-slate-100 dark:text-gray-100">0</dd>
                 </dl>
             </div>
 
             <div id="quiz-specific-stats-container" class="space-y-4 mb-6">
-                <h3 class="text-xl font-semibold text-sky-700 dark:text-sky-300 mb-3">Detalle por Cuestionario:</h3>
+                <h3 class="text-xl font-semibold text-sky-300 dark:text-sky-400 mb-3">Detalle por Cuestionario:</h3>
                 </div>
 
             <div class="flex flex-col sm:flex-row gap-4 mt-8">
@@ -202,13 +214,13 @@
 
         <div id="quiz-view" class="hidden">
              <div class="flex justify-between items-center mb-6">
-                <h2 id="quiz-title" class="text-2xl font-bold text-sky-600 dark:text-sky-400 truncate mr-4">Cuestionario</h2>
-                <div class="text-lg whitespace-nowrap text-gray-700 dark:text-slate-300">
+                <h2 id="quiz-title" class="text-2xl font-bold text-sky-400 truncate mr-4">Cuestionario</h2>
+                <div class="text-lg whitespace-nowrap text-slate-300">
                     <span class="font-semibold">Pregunta:</span> <span id="question-counter"></span>
                 </div>
             </div>
-            <div class="bg-gray-100 dark:bg-slate-700 p-6 rounded-lg shadow-inner mb-6 min-h-[100px]">
-                <p id="question-text" class="text-lg md:text-xl text-gray-800 dark:text-slate-100"></p>
+            <div class="bg-slate-700 dark:bg-gray-800 p-6 rounded-lg shadow-inner mb-6 min-h-[100px]">
+                <p id="question-text" class="text-lg md:text-xl text-slate-100 dark:text-gray-100"></p>
             </div>
 
             <div id="options-container" class="space-y-3 mb-6">
@@ -216,13 +228,13 @@
             
             <div id="feedback-message" class="my-4 text-center font-medium h-6"></div>
             
-            <div class="mt-6 pt-4 border-t border-gray-300 dark:border-slate-700">
+            <div class="mt-6 pt-4 border-t border-slate-600 dark:border-gray-700">
                 <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
-                    <button id="prev-question-button" onclick="previousQuestion()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md w-full sm:w-auto">
+                    <button id="prev-question-button" onclick="previousQuestion()" class="bg-slate-500 dark:bg-gray-600 hover:bg-slate-600 dark:hover:bg-gray-500 text-white font-semibold py-2 px-6 rounded-lg shadow-md w-full sm:w-auto">
                         Anterior
                     </button>
-                    <div class="text-lg font-semibold order-first sm:order-none sm:mx-auto text-gray-700 dark:text-slate-300">
-                        Puntuación: <span id="score" class="text-green-500 dark:text-green-400">0</span>
+                    <div class="text-lg font-semibold order-first sm:order-none sm:mx-auto text-slate-300 dark:text-gray-300">
+                        Puntuación: <span id="score" class="text-green-400">0</span>
                     </div>
                     <button id="next-question-button" onclick="nextQuestion()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md w-full sm:w-auto">
                         Siguiente
@@ -235,11 +247,11 @@
         </div>
 
         <div id="results-view" class="hidden text-center">
-            <h2 class="text-3xl font-bold text-sky-600 dark:text-sky-400 mb-4">¡Cuestionario Completado!</h2>
-            <p class="text-lg text-gray-600 dark:text-slate-400 mb-4">Resultados para: <span id="completed-quiz-name" class="font-semibold text-sky-700 dark:text-sky-300"></span></p>
-            <p class="text-xl text-gray-700 dark:text-slate-300 mb-2">Tu puntuación final es:</p>
-            <p id="final-score" class="text-5xl font-bold text-green-500 dark:text-green-400 mb-2"></p>
-            <p id="final-percentage" class="text-2xl text-gray-700 dark:text-slate-300 mb-4"></p>
+            <h2 class="text-3xl font-bold text-sky-400 mb-4">¡Cuestionario Completado!</h2>
+            <p class="text-lg text-slate-400 dark:text-gray-400 mb-4">Resultados para: <span id="completed-quiz-name" class="font-semibold text-sky-300 dark:text-sky-400"></span></p>
+            <p class="text-xl text-slate-300 dark:text-gray-300 mb-2">Tu puntuación final es:</p>
+            <p id="final-score" class="text-5xl font-bold text-green-400 mb-2"></p>
+            <p id="final-percentage" class="text-2xl text-slate-300 dark:text-gray-300 mb-4"></p>
             <p id="approval-message" class="text-2xl font-bold mb-8"></p>
             <button onclick="restartApp()" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md">
                 Volver al Menú Principal
@@ -247,11 +259,11 @@
         </div>
 
         <div id="confirmation-modal" class="modal-overlay hidden">
-            <div class="modal-content bg-white dark:bg-slate-800">
-                <h3 class="text-xl font-semibold text-sky-600 dark:text-sky-300 mb-4">Confirmar Acción</h3>
-                <p id="modal-message" class="text-gray-700 dark:text-slate-300 mb-6">¿Estás seguro?</p>
+            <div class="modal-content bg-slate-700 dark:bg-gray-800">
+                <h3 class="text-xl font-semibold text-sky-300 dark:text-sky-400 mb-4">Confirmar Acción</h3>
+                <p id="modal-message" class="text-slate-300 dark:text-gray-300 mb-6">¿Estás seguro?</p>
                 <div class="flex justify-end space-x-3">
-                    <button id="modal-cancel-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 dark:bg-gray-600 dark:hover:bg-gray-500 dark:text-white font-medium py-2 px-4 rounded-lg">Cancelar</button>
+                    <button id="modal-cancel-button" class="bg-slate-500 dark:bg-gray-600 hover:bg-slate-600 dark:hover:bg-gray-500 text-white font-medium py-2 px-4 rounded-lg">Cancelar</button>
                     <button id="modal-confirm-button" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg">Confirmar</button>
                 </div>
             </div>
@@ -542,7 +554,7 @@
 
         function toggleTheme() {
             const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light'); // 'light' representa el tema azulado oscuro por defecto
         }
 
 
@@ -584,7 +596,7 @@
 
         function startSelectedQuiz(quizKey, isContinuation = false) {
             const quizData = preloadedQuizzes[quizKey];
-            if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+            if (!quizData || !quizData.questions || !quizData.questions.length === 0) {
                 alert(`Error: No se encontraron preguntas para "${quizData.name || quizKey}".`);
                 return;
             }
@@ -595,16 +607,17 @@
             const loadedStates = loadQuestionStatesFromStorage(quizKey);
             
             const summary = getQuizSummary(quizKey);
-            const buttonElement = document.querySelector(`button[onclick="startSelectedQuiz('${quizKey}', ${isContinuation})"]`);
-            const buttonTextFromDOM = buttonElement ? buttonElement.textContent.trim() : "Comenzar";
+            // Determinar si es un reintento basado en si el cuestionario ya fue completado (tiene resumen)
+            // o si explícitamente no es una continuación.
+            const isRetry = (summary && summary.completed && !isContinuation);
 
 
-            if (!isContinuation || buttonTextFromDOM === "Reintentar") { 
+            if (isRetry || (!isContinuation && !Object.keys(loadedStates).length)) { 
                 questionStates = {}; 
-                if (buttonTextFromDOM === "Reintentar") {
+                if (isRetry) { // Si es un reintento de un completado, borrar el resumen viejo.
                     localStorage.removeItem(`quizProgressSummary_${quizKey}`);
                 }
-            } else {
+            } else { // Es continuación o un comienzo de algo ya parcialmente respondido.
                  questionStates = loadedStates;
             }
 
@@ -650,15 +663,17 @@
             if (optionsContainer) optionsContainer.innerHTML = ''; 
             
             const displayOptionsOrder = qState.optionsOrder || shuffleArray([...questionData.options]);
-            if (!qState.optionsOrder && !qState.attempted) { 
+            if (!qState.optionsOrder) { // Guardar el orden de opciones si no existe para esta pregunta y este intento
                  questionStates[questionData.id] = { ...qState, optionsOrder: displayOptionsOrder };
+                 // No guardar en localStorage aquí, se hará al responder, salir o al completar el cuestionario
             }
 
 
             displayOptionsOrder.forEach(optionText => {
                 const button = document.createElement('button');
                 button.textContent = optionText;
-                button.className = 'option-button w-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-medium py-3 px-4 rounded-lg border border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500';
+                // Aplicar estilos base y luego los específicos del modo oscuro si es necesario
+                button.className = 'option-button w-full bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-800 dark:text-slate-200 font-medium py-3 px-4 rounded-lg border border-slate-300 dark:border-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500';
                 
                 if (qState.attempted) {
                     button.disabled = true;
@@ -702,10 +717,11 @@
         function selectAnswer(selectedOptionText) {
             const questionData = currentQuiz[currentQuestionIndex];
             let qStateForId = questionStates[questionData.id];
-            if (!qStateForId) { 
-                 qStateForId = { optionsOrder: shuffleArray([...questionData.options]) }; 
-            } else if (!qStateForId.optionsOrder) { 
-                 qStateForId.optionsOrder = shuffleArray([...questionData.options]);
+            
+            // Si el estado no existe o no tiene optionsOrder, es la primera vez que se ve esta pregunta en este intento
+            if (!qStateForId || !qStateForId.optionsOrder) {
+                 const currentOptionsOnScreen = Array.from(optionsContainer.querySelectorAll('.option-button')).map(btn => btn.textContent);
+                 qStateForId = { ... (qStateForId || {}), optionsOrder: currentOptionsOnScreen };
             }
 
             if (qStateForId.attempted) return; 
@@ -923,6 +939,7 @@
                 }
                 
                 if (summary && summary.completed) {
+                    if (!attemptedThisQuiz) globalTotalAttemptedQuizzes++; // Contar si solo hay resumen y no estados (raro)
                     attemptedThisQuiz = true; 
                     globalTotalCompletedQuizzes++;
                     globalTotalPercentageSum += summary.percentage;
@@ -931,10 +948,13 @@
                 }
                 
                 if (attemptedThisQuiz) { 
-                    globalTotalAttemptedQuizzes++;
+                    if (!summary || !summary.completed) { // Si se intentó pero no se completó, o si el resumen no existe pero hay estados
+                         globalTotalAttemptedQuizzes++; // Contar como intentado si hay estados pero no resumen completo
+                    }
                     globalTotalQuestionsAnsweredEver += answeredInThis; 
                     globalTotalCorrectAnswersEver += correctInThis;
                 }
+
 
                 if (!attemptedThisQuiz && (!states || Object.keys(states).length === 0)) { 
                      detailHTML += `<p class="text-xs text-gray-500 dark:text-slate-500">Aún no intentado.</p>`;
@@ -943,6 +963,16 @@
                 if (quizSpecificStatsContainer) quizSpecificStatsContainer.innerHTML += detailHTML;
             });
             
+            // Corregir el conteo de totalAttemptedQuizzes para que no duplique
+            let uniqueAttemptedQuizzes = new Set();
+             Object.keys(preloadedQuizzes).forEach(quizKey => {
+                if (localStorage.getItem(`quizProgressSummary_${quizKey}`) || localStorage.getItem(`questionStates_${quizKey}`)) {
+                    uniqueAttemptedQuizzes.add(quizKey);
+                }
+            });
+            globalTotalAttemptedQuizzes = uniqueAttemptedQuizzes.size;
+
+
             if (statsTotalAttempted) statsTotalAttempted.textContent = globalTotalAttemptedQuizzes;
             if (statsTotalCompleted) statsTotalCompleted.textContent = globalTotalCompletedQuizzes;
             if (statsAvgApproval) statsAvgApproval.textContent = globalTotalCompletedQuizzes > 0 ? `${Math.round(globalTotalPercentageSum / globalTotalCompletedQuizzes)}%` : "N/A";
@@ -1013,14 +1043,13 @@
                 actionToConfirm = null;
             };
 
-            // Dark Mode Logic
             const storedTheme = localStorage.getItem('theme');
-            if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            if (storedTheme === 'dark') { // Si el tema "negro profundo" fue guardado
                 applyTheme(true);
                 if (themeToggle) themeToggle.checked = true;
-            } else {
+            } else { // Por defecto, tema "azulado oscuro" (sin clase 'dark' en html)
                 applyTheme(false);
-                 if (themeToggle) themeToggle.checked = false;
+                if (themeToggle) themeToggle.checked = false;
             }
             if (themeToggle) themeToggle.addEventListener('change', toggleTheme);
             
