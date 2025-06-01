@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuestionario UX/UI con Progreso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .option-button {
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        .option-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+        .correct {
+            background-color: #22c55e !important; /* green-500 */
+            color: white !important;
+            border-color: #16a34a !important; /* green-600 */
+        }
+        .incorrect {
+            background-color: #ef4444 !important; /* red-500 */
+            color: white !important;
+            border-color: #dc2626 !important; /* red-600 */
+        }
+        .disabled-option, .api-button:disabled, button:disabled {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .api-button {
+             transition: background-color 0.3s, opacity 0.3s;
+        }
+        .quiz-card {
+            min-height: 180px; /* Asegura altura mínima para consistencia */
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100 flex items-center justify-center min-h-screen p-4 py-8">
+
+    <div id="app-container" class="bg-slate-800 shadow-2xl rounded-xl p-6 md:p-10 w-full max-w-3xl transition-all duration-500">
+
+        <div id="initial-view">
+            <h1 class="text-3xl md:text-4xl font-bold text-center mb-8 text-sky-400">Cuestionarios UX/UI</h1>
+            <p class="text-center text-slate-300 mb-10">Selecciona un cuestionario para comenzar o revisa tu progreso:</p>
+            <div id="quiz-selection-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                </div>
+        </div>
+
+        <div id="quiz-view" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="quiz-title" class="text-2xl font-bold text-sky-400 truncate mr-4">Cuestionario</h2>
+                <div class="text-lg whitespace-nowrap">
+                    <span class="font-semibold">Pregunta:</span> <span id="question-counter" class="text-slate-300"></span>
+                </div>
+            </div>
+            <div class="bg-slate-700 p-6 rounded-lg shadow-inner mb-6 min-h-[100px]">
+                <p id="question-text" class="text-lg md:text-xl text-slate-100"></p>
+            </div>
+
+            <div id="options-container" class="space-y-3 mb-6">
+                </div>
+            
+            <div id="feedback-message" class="my-4 text-center font-medium h-6"></div>
+
+            <div id="explanation-section" class="my-4 text-center hidden">
+                <button id="explanation-button" onclick="fetchExplanation()" class="api-button bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md text-sm">
+                    ✨ Explicar Respuesta
+                </button>
+                <div id="api-loading-explanation" class="hidden mt-2 text-sm text-cyan-300">Generando explicación...</div>
+                <div id="explanation-container" class="mt-2 text-sm text-cyan-200 bg-slate-700/80 p-3 rounded-md shadow-inner min-h-[20px] hidden"></div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-slate-700">
+                <div class="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0">
+                    <button id="prev-question-button" onclick="previousQuestion()" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 w-full sm:w-auto">
+                        Anterior
+                    </button>
+                    <div class="text-lg font-semibold order-first sm:order-none sm:mx-auto">
+                        Puntuación: <span id="score" class="text-green-400">0</span>
+                    </div>
+                    <button id="next-question-button" onclick="nextQuestion()" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75 w-full sm:w-auto">
+                        Siguiente
+                    </button>
+                </div>
+                <button onclick="restartApp()" class="mt-6 w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-opacity-75">
+                    Volver al Menú Principal
+                </button>
+            </div>
+        </div>
+
+        <div id="results-view" class="hidden text-center">
+            <h2 class="text-3xl font-bold text-sky-400 mb-4">¡Cuestionario Completado!</h2>
+            <p class="text-lg text-slate-400 mb-4">Resultados para: <span id="completed-quiz-name" class="font-semibold text-sky-300"></span></p>
+            <p class="text-xl text-slate-300 mb-2">Tu puntuación final es:</p>
+            <p id="final-score" class="text-5xl font-bold text-green-400 mb-2"></p>
+            <p id="final-percentage" class="text-2xl text-slate-300 mb-4"></p>
+            <p id="approval-message" class="text-2xl font-bold mb-8"></p>
+            <button onclick="restartApp()" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold py-3 px-8 rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-opacity-75">
+                Volver al Menú Principal
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // --- Datos de los Cuestionarios (Precargados) ---
+        const preloadedQuizzes = {
+            semana1_conceptos: {
+                name: "Semana 1: Conceptos UX/UI",
+                questions: [
+                    {"id":"q_conceptos_ux_ui_1","type":"single","question":"¿Cuál de estos conceptos está más relacionado con el “cómo se ve” un producto?","options":["Usabilidad","UX","Wireframes","UI"],"correctAnswer":"UI"},
+                    {"id":"q_conceptos_ux_ui_2","type":"single","question":"¿Cuál de los siguientes es un buen ejemplo de mejora UX?","options":["Aumentar el logo de la empresa","Usar más íconos en la página","Cambiar el fondo blanco a gris","Reducir los campos de un formulario de 10 a 3"],"correctAnswer":"Reducir los campos de un formulario de 10 a 3"},
+                    {"id":"q_conceptos_ux_ui_3","type":"single","question":"¿Cuál de los siguientes NO es un objetivo de UX?","options":["Aumentar la tasa de clics en anuncios","Hacer sentir bien al usuario","Optimizar la interacción con el sistema","Resolver problemas del usuario"],"correctAnswer":"Aumentar la tasa de clics en anuncios"},
+                    {"id":"q_conceptos_ux_ui_4","type":"single","question":"¿Cuál de los siguientes NO es un principio de las pautas WCAG?","options":["Operable","Comprensible","Robusto","Eficiente"],"correctAnswer":"Eficiente"},
+                    {"id":"q_conceptos_ux_ui_5","type":"single","question":"¿Cuál es un beneficio directo de una buena UX en aplicaciones como despertadores?","options":["Hacen que el usuario se sienta más cómodo y empoderado","Aumentan el tamaño de pantalla del dispositivo","Permiten más configuraciones técnicas","Mejoran el SEO del producto"],"correctAnswer":"Hacen que el usuario se sienta más cómodo y empoderado"},
+                    {"id":"q_conceptos_ux_ui_6","type":"single","question":"¿Cuál es una característica subjetiva y deseable de la pirámide de UX?","options":["Conveniente","Funcional","Confiable","Usable"],"correctAnswer":"Conveniente"},
+                    {"id":"q_conceptos_ux_ui_7","type":"single","question":"¿Cuál es una herramienta típica usada en UX?","options":["Selector de fuentes","Color Picker","Diseño de íconos","Wireframes"],"correctAnswer":"Wireframes"},
+                    {"id":"q_conceptos_ux_ui_8","type":"single","question":"¿Qué aspecto diferencia principalmente a UX de UI?","options":["UX se enfoca en la experiencia global y UI en el aspecto visual","UI se refiere al backend del sistema","UX trabaja solo con programadores","UI es emocional y UX es solo técnico"],"correctAnswer":"UX se enfoca en la experiencia global y UI en el aspecto visual"},
+                    {"id":"q_conceptos_ux_ui_9","type":"single","question":"¿Qué característica corresponde al nivel más básico de la pirámide de UX?","options":["Conveniente","Placentero","Funcional","Significativo"],"correctAnswer":"Funcional"},
+                    {"id":"q_conceptos_ux_ui_10","type":"single","question":"¿Qué característica es considerada “objetiva” según la pirámide de UX?","options":["Placentero","Significativo","Usable","Conveniente"],"correctAnswer":"Usable"},
+                    {"id":"q_conceptos_ux_ui_11","type":"single","question":"¿Qué característica representa el nivel más alto de la pirámide de calidad UX?","options":["Conveniente","Funcional","Placentero","Significativo"],"correctAnswer":"Significativo"},
+                    {"id":"q_conceptos_ux_ui_12","type":"single","question":"¿Qué ejemplo representa una mejora en UI?","options":["Agregar más opciones en el backend","Hacer que la aplicación funcione offline","Simplificar el código CSS","Cambiar un menú ambiguo por uno con etiquetas claras"],"correctAnswer":"Cambiar un menú ambiguo por uno con etiquetas claras"},
+                    {"id":"q_conceptos_ux_ui_13","type":"single","question":"¿Qué enfoque busca la UX, según su definición más completa?","options":["Reducir el peso del sitio web","Atraer visualmente al usuario","Generar una experiencia integral y satisfactoria","Funcionar en todos los navegadores"],"correctAnswer":"Generar una experiencia integral y satisfactoria"},
+                    {"id":"q_conceptos_ux_ui_14","type":"single","question":"¿Qué frase resume la relación entre UI y UX?","options":["UI es parte del backend, UX es frontend","UI es diseño gráfico, UX es marketing","UI es solo para programadores, UX para usuarios","UI es el puente, UX es el viaje completo"],"correctAnswer":"UI es el puente, UX es el viaje completo"},
+                    {"id":"q_conceptos_ux_ui_15","type":"single","question":"¿Qué principio de accesibilidad indica que la información debe poder ser captada por los sentidos?","options":["Perceptible","Operable","Robusto","Comprensible"],"correctAnswer":"Perceptible"},
+                    {"id":"q_conceptos_ux_ui_16","type":"single","question":"¿Qué representa mejor el concepto de accesibilidad en UX?","options":["Adaptarse a personas con distintas condiciones","Optimizar el rendimiento en backend","Crear contenido solo para móviles","Incluir animaciones atractivas"],"correctAnswer":"Adaptarse a personas con distintas condiciones"},
+                    {"id":"q_conceptos_ux_ui_17","type":"single","question":"¿Qué representa mejor un ejemplo de buena usabilidad?","options":["Un botón bonito sin función clara","Un proceso de compra rápido y sin errores","Una interfaz con muchos efectos","Una tipografía sofisticada"],"correctAnswer":"Un proceso de compra rápido y sin errores"},
+                    {"id":"q_conceptos_ux_ui_18","type":"single","question":"¿Qué significa UX en diseño?","options":["Usuario Extendido","Experiencia de Usuario","Uso Externo","Unidad de Exploración"],"correctAnswer":"Experiencia de Usuario"},
+                    {"id":"q_conceptos_ux_ui_19","type":"single","question":"¿Qué tendencia UX implica retroalimentación breve como “likes” animados?","options":["Diseño inclusivo","Dark Mode","Voice UI","Microinteracciones"],"correctAnswer":"Microinteracciones"},
+                    {"id":"q_conceptos_ux_ui_20","type":"single","question":"¿Quién acuñó el término “Experiencia de Usuario” en los años 90?","options":["Steve Jobs","Jakob Nielsen","Alan Cooper","Don Norman"],"correctAnswer":"Don Norman"}
+                ]
+            },
+            semana1_dcu: {
+                name: "Semana 1: Diseño Centrado en Usuario",
+                questions: [
+                    {"id":"q_dcu_1","type":"single","question":"¿Cuál es el objetivo del diseño centrado en el usuario (DCU)?","options":["Optimizar el código del backend","Incorporar animaciones atractivas","Crear productos centrados en necesidades reales","Reducir el peso del archivo final"],"correctAnswer":"Crear productos centrados en necesidades reales"},
+                    {"id":"q_dcu_2","type":"single","question":"¿Cuál es una de las fases principales del proceso DCU?","options":["Diseño del logo","Evaluación con usuarios","Desarrollo en producción","Auditoría financiera"],"correctAnswer":"Evaluación con usuarios"},
+                    {"id":"q_dcu_3","type":"single","question":"¿Qué técnica permite representar objetivos, necesidades y frustraciones del usuario?","options":["Encuesta cerrada","Mapa de calor","User Persona","A/B Testing"],"correctAnswer":"User Persona"},
+                    {"id":"q_dcu_4","type":"single","question":"¿Qué herramienta se utiliza para entender las tareas del usuario paso a paso?","options":["Mapa de navegación","Card Sorting","User Flow","Test de carga"],"correctAnswer":"User Flow"},
+                    {"id":"q_dcu_5","type":"single","question":"¿Cuál es un beneficio del diseño centrado en el usuario?","options":["Mayor satisfacción y adopción del producto","Aumento del peso de la aplicación","Menor velocidad de carga","Mayor dificultad de desarrollo"],"correctAnswer":"Mayor satisfacción y adopción del producto"},
+                    {"id":"q_dcu_6","type":"single","question":"¿Qué método ayuda a organizar contenido según la lógica del usuario?","options":["Eye Tracking","Card Sorting","Diagrama de Gantt","Benchmarking"],"correctAnswer":"Card Sorting"},
+                    {"id":"q_dcu_7","type":"single","question":"¿Qué entregable representa visualmente las etapas del recorrido del usuario?","options":["User Persona","Mapa de experiencia","Wireframe","Prototipo"],"correctAnswer":"Mapa de experiencia"},
+                    {"id":"q_dcu_8","type":"single","question":"¿Qué herramienta permite detectar si los usuarios encuentran útil una función?","options":["Entrevista exploratoria","Test A/B","Mapa de calor","Encuesta cerrada"],"correctAnswer":"Entrevista exploratoria"},
+                    {"id":"q_dcu_9","type":"single","question":"¿Qué se evalúa con un test de usabilidad?","options":["Velocidad de la red","Costo del servidor","Interacción y dificultades del usuario","Número de imágenes en la UI"],"correctAnswer":"Interacción y dificultades del usuario"},
+                    {"id":"q_dcu_10","type":"single","question":"¿Qué enfoque representa mejor al DCU?","options":["Diseñar primero, testear después","Codificar sin prototipos","Validar con usuarios desde el inicio","Reutilizar plantillas sin adaptar"],"correctAnswer":"Validar con usuarios desde el inicio"},
+                    {"id":"q_dcu_11","type":"single","question":"¿Qué entregable se crea generalmente después de definir un User Persona?","options":["Moodboard","Card Sorting","User Journey","Mapa del sitio"],"correctAnswer":"User Journey"},
+                    {"id":"q_dcu_12","type":"single","question":"¿Qué representa el término 'iteración' en UX?","options":["Diseñar una sola vez","Repetir el diseño hasta obtener el código final","Mejorar el diseño mediante ciclos de prueba y ajuste","Elegir el diseño más estético"],"correctAnswer":"Mejorar el diseño mediante ciclos de prueba y ajuste"},
+                    {"id":"q_dcu_13","type":"single","question":"¿Qué rol cumple el mapa de sitio?","options":["Visualiza jerarquía y navegación de contenidos","Representa objetivos del usuario","Mide eficiencia de carga","Define la experiencia emocional"],"correctAnswer":"Visualiza jerarquía y navegación de contenidos"},
+                    {"id":"q_dcu_14","type":"single","question":"¿Qué etapa sigue a la investigación del usuario en DCU?","options":["Implementación final","Prototipado y pruebas","Auditoría legal","Medición de métricas SEO"],"correctAnswer":"Prototipado y pruebas"},
+                    {"id":"q_dcu_15","type":"single","question":"¿Qué componente se utiliza para guiar el diseño desde las necesidades del usuario?","options":["Indicadores KPI","User Persona","Moodboard","Pixel Grid"],"correctAnswer":"User Persona"},
+                    {"id":"q_dcu_16","type":"single","question":"¿Qué representa una 'frustración' en un User Persona?","options":["Una debilidad del producto","Un problema que enfrenta el usuario","Una falla del servidor","Un error de diseño"],"correctAnswer":"Un problema que enfrenta el usuario"},
+                    {"id":"q_dcu_17","type":"single","question":"¿Cuál es una ventaja de validar con usuarios reales?","options":["Evita errores técnicos","Permite diseñar sin prototipos","Alinea el diseño con expectativas reales","Reduce el presupuesto de desarrollo"],"correctAnswer":"Alinea el diseño con expectativas reales"},
+                    {"id":"q_dcu_18","type":"single","question":"¿Qué documento describe al usuario tipo con nombre, edad, ocupación y necesidades?","options":["Mapa de sitio","User Persona","Wireframe","Informe técnico"],"correctAnswer":"User Persona"},
+                    {"id":"q_dcu_19","type":"single","question":"¿Qué se debe evitar al crear un User Persona?","options":["Basarse en investigación","Identificar frustraciones","Asignar características demográficas","Inventar sin datos reales"],"correctAnswer":"Inventar sin datos reales"},
+                    {"id":"q_dcu_20","type":"single","question":"¿Qué se puede derivar del User Journey?","options":["Puntos críticos de mejora en la experiencia","Estructura de base de datos","Optimización del backend","Reducción de presupuesto"],"correctAnswer":"Puntos críticos de mejora en la experiencia"}
+                ]
+            },
+            semana1_investigacion: {
+                name: "Semana 1: Investigación de Usuarios",
+                questions: [
+                    {"id":"q_investigacion_usuarios_1","type":"single","question":"¿Cuál es el objetivo principal de la investigación de usuarios?","options":["Diseñar sin necesidad de testeo","Validar decisiones sin usuarios","Comprender necesidades, comportamientos y motivaciones","Evitar el uso de prototipos"],"correctAnswer":"Comprender necesidades, comportamientos y motivaciones"},
+                    {"id":"q_investigacion_usuarios_2","type":"single","question":"¿Qué técnica consiste en observar el entorno natural del usuario?","options":["Encuesta","Card Sorting","Observación contextual","Test A/B"],"correctAnswer":"Observación contextual"},
+                    {"id":"q_investigacion_usuarios_3","type":"single","question":"¿Qué tipo de entrevista se realiza sin guion estructurado?","options":["Encuesta cerrada","Entrevista abierta","Cuestionario mixto","Test cerrado"],"correctAnswer":"Entrevista abierta"},
+                    {"id":"q_investigacion_usuarios_4","type":"single","question":"¿Qué técnica permite clasificar y agrupar patrones encontrados en los datos?","options":["Affinity Mapping","Wireframing","A/B Testing","Benchmarking"],"correctAnswer":"Affinity Mapping"},
+                    {"id":"q_investigacion_usuarios_5","type":"single","question":"¿Qué es un insight en UX?","options":["Una métrica de navegación","Una funcionalidad clave","Un hallazgo significativo sobre el usuario","Un estilo visual elegido"],"correctAnswer":"Un hallazgo significativo sobre el usuario"},
+                    {"id":"q_investigacion_usuarios_6","type":"single","question":"¿Qué técnica ayuda a priorizar tareas según importancia y frecuencia?","options":["Análisis heurístico","Matriz de priorización","Mapa de empatía","Wireflow"],"correctAnswer":"Matriz de priorización"},
+                    {"id":"q_investigacion_usuarios_7","type":"single","question":"¿Cuál es una ventaja de las entrevistas cualitativas?","options":["Permiten medir precisión","Detectan tendencias de comportamiento profundo","Ofrecen grandes volúmenes de datos","Requieren poco análisis"],"correctAnswer":"Detectan tendencias de comportamiento profundo"},
+                    {"id":"q_investigacion_usuarios_8","type":"single","question":"¿Cuál es un método cuantitativo en investigación UX?","options":["Test de usabilidad presencial","Encuesta en línea con respuestas cerradas","Entrevista semiestructurada","Observación sin intervención"],"correctAnswer":"Encuesta en línea con respuestas cerradas"},
+                    {"id":"q_investigacion_usuarios_9","type":"single","question":"¿Qué elemento NO se considera parte del mapa de empatía?","options":["Dice","Escucha","Presupuesta","Piensa"],"correctAnswer":"Presupuesta"},
+                    {"id":"q_investigacion_usuarios_10","type":"single","question":"¿Qué representa el término 'sesgo del moderador' en entrevistas?","options":["Uso de lenguaje técnico en formularios","Errores de carga del sistema","Influencia del entrevistador sobre el usuario","Fallos en el diseño del sistema"],"correctAnswer":"Influencia del entrevistador sobre el usuario"},
+                    {"id":"q_investigacion_usuarios_11","type":"single","question":"¿Cuál es una técnica efectiva para detectar problemas de usabilidad?","options":["Wireframe","Benchmarking","Test con usuarios","Moodboard"],"correctAnswer":"Test con usuarios"},
+                    {"id":"q_investigacion_usuarios_12","type":"single","question":"¿Cuál es una herramienta útil para sintetizar lo aprendido en entrevistas?","options":["Diagrama de Gantt","Affinity Mapping","CSS Grid","Storyboards"],"correctAnswer":"Affinity Mapping"},
+                    {"id":"q_investigacion_usuarios_13","type":"single","question":"¿Qué técnica se puede usar para investigar la arquitectura de la información?","options":["Card Sorting","Encuesta abierta","Wireframe","Mapa de empatía"],"correctAnswer":"Card Sorting"},
+                    {"id":"q_investigacion_usuarios_14","type":"single","question":"¿Qué se debe evitar durante una entrevista de investigación?","options":["Hacer preguntas neutras","Interrumpir con juicios de valor","Permitir pausas","Escuchar activamente"],"correctAnswer":"Interrumpir con juicios de valor"},
+                    {"id":"q_investigacion_usuarios_15","type":"single","question":"¿Cuál es un beneficio de combinar métodos cualitativos y cuantitativos?","options":["Aumenta el presupuesto del proyecto","Permite mayor control de hardware","Ofrece una visión completa de los usuarios","Reduce la necesidad de entrevistas"],"correctAnswer":"Ofrece una visión completa de los usuarios"},
+                    {"id":"q_investigacion_usuarios_16","type":"single","question":"¿Qué define mejor una encuesta cerrada?","options":["Preguntas sin límite de respuesta","Respuestas escritas libremente","Opciones predefinidas y cuantificables","Solo para test A/B"],"correctAnswer":"Opciones predefinidas y cuantificables"},
+                    {"id":"q_investigacion_usuarios_17","type":"single","question":"¿Qué acción es clave antes de una entrevista con usuarios?","options":["Elegir la paleta de colores","Hacer preguntas técnicas","Definir objetivos claros","Escribir código HTML"],"correctAnswer":"Definir objetivos claros"},
+                    {"id":"q_investigacion_usuarios_18","type":"single","question":"¿Cuál es un sesgo común en encuestas mal diseñadas?","options":["Errores en CSS","Sesgo de confirmación","Carga lenta de interfaz","Falta de estilo visual"],"correctAnswer":"Sesgo de confirmación"},
+                    {"id":"q_investigacion_usuarios_19","type":"single","question":"¿Qué herramienta se puede usar para visualizar la experiencia emocional del usuario?","options":["User Flow","Mapa de empatía","Análisis DAFO","Hoja de estilo"],"correctAnswer":"Mapa de empatía"},
+                    {"id":"q_investigacion_usuarios_20","type":"single","question":"¿Qué rol cumple el análisis de datos en la investigación de usuarios?","options":["Solo sirve para medir ingresos","Permite validar ideas estéticas","Ayuda a descubrir patrones y oportunidades","Es solo para analistas técnicos"],"correctAnswer":"Ayuda a descubrir patrones y oportunidades"}
+                ]
+            },
+            semana2_diseno_visual: {
+                name: "Semana 2: Diseño Visual y Branding",
+                questions: [
+                    {"id":"q_diseno_visual_branding_1","type":"single","question":"¿Cuál de estas frases cumple con una longitud óptima para interfaces según Miller (1956)?","options":["Ingrese aquí todos sus datos personales correspondientes al formulario.","Esta es la funcionalidad principal que usted debe considerar.","Complete el procedimiento que aparece detallado en la sección siguiente.","Guardar cambios"],"correctAnswer":"Guardar cambios"},
+                    {"id":"q_diseno_visual_branding_2","type":"single","question":"¿Cuál es un atributo visual clave en la identidad de marca?","options":["Paleta cromática","Interacciones de usuario","Nivel de dificultad del código","Tiempo de carga"],"correctAnswer":"Paleta cromática"},
+                    {"id":"q_diseno_visual_branding_3","type":"single","question":"¿Cuál es un principio del UX Writing?","options":["Alternar términos como sinónimos","Claridad léxica con términos familiares","Usar tecnicismos siempre","Crear frases largas y complejas"],"correctAnswer":"Claridad léxica con términos familiares"},
+                    {"id":"q_diseno_visual_branding_4","type":"single","question":"El patrón de lectura Z es más adecuado para:","options":["Contratos largos","Landing pages","Blogs técnicos","Formularios legales"],"correctAnswer":"Landing pages"},
+                    {"id":"q_diseno_visual_branding_5","type":"single","question":"En UX/UI, la ley de continuidad se utiliza para:","options":["Permitir que el ojo siga trayectorias fluidas","Separar secciones mediante bordes","Agrupar iconos similares","Mostrar formularios en capas"],"correctAnswer":"Permitir que el ojo siga trayectorias fluidas"},
+                    {"id":"q_diseno_visual_branding_6","type":"single","question":"La ley de figura/fondo en diseño visual busca:","options":["Aplicar gradientes de color","Minimizar el número de botones","Destacar elementos principales del fondo","Hacer todos los elementos iguales"],"correctAnswer":"Destacar elementos principales del fondo"},
+                    {"id":"q_diseno_visual_branding_7","type":"single","question":"La Teoría de la Carga Cognitiva postula que:","options":["La memoria de trabajo tiene una capacidad limitada","El usuario puede procesar 20 ítems simultáneamente","Los estímulos visuales no afectan la comprensión","La memoria de trabajo es ilimitada"],"correctAnswer":"La memoria de trabajo tiene una capacidad limitada"},
+                    {"id":"q_diseno_visual_branding_8","type":"single","question":"¿Qué acción representa una microinteracción en branding?","options":["Hacer scroll hasta el final","Cargar toda una pantalla","Cambiar el idioma desde configuración","Un corazón que late al hacer \"like\""],"correctAnswer":"Un corazón que late al hacer \"like\""},
+                    {"id":"q_diseno_visual_branding_9","type":"single","question":"¿Qué busca lograr el diseño visual en UX/UI además de la usabilidad?","options":["Mejorar el posicionamiento en buscadores","Evitar cualquier tipo de animación","Disminuir el uso de colores en la interfaz","Crear interfaces emocionales y memorables"],"correctAnswer":"Crear interfaces emocionales y memorables"},
+                    {"id":"q_diseno_visual_branding_10","type":"single","question":"¿Qué busca una auditoría de marca?","options":["Extraer el ADN visual de la marca","Verificar las métricas del servidor","Estimar el ROI del diseño","Crear el código del sistema"],"correctAnswer":"Extraer el ADN visual de la marca"},
+                    {"id":"q_diseno_visual_branding_11","type":"single","question":"¿Qué elemento no pertenece a una guía de estilo digital?","options":["Estados interactivos","Grid system","Modo oscuro/claro","Diseño de base de datos"],"correctAnswer":"Diseño de base de datos"},
+                    {"id":"q_diseno_visual_branding_12","type":"single","question":"¿Qué patrón de lectura predomina en contenido web, según Nielsen?","options":["Diagonal","Circular","C","F"],"correctAnswer":"F"},
+                    {"id":"q_diseno_visual_branding_13","type":"single","question":"¿Qué principio Gestalt explica que el usuario completa figuras visuales incompletas?","options":["Semejanza","Cierre","Continuidad","Figura/fondo"],"correctAnswer":"Cierre"},
+                    {"id":"q_diseno_visual_branding_14","type":"single","question":"¿Qué representa la consistencia semántica en textos UI?","options":["Usar sinónimos variados","Aplicar términos técnicos en todos los casos","Mantener los mismos términos para acciones iguales","Cambiar palabras según el contexto"],"correctAnswer":"Mantener los mismos términos para acciones iguales"},
+                    {"id":"q_diseno_visual_branding_15","type":"single","question":"¿Qué representa la identidad de marca en experiencias digitales?","options":["El número de pantallas en una app","El conjunto de microinteracciones disponibles","Sistema holístico que integra valores, diseño y comunicación","Una estrategia de marketing sin elementos visuales"],"correctAnswer":"Sistema holístico que integra valores, diseño y comunicación"},
+                    {"id":"q_diseno_visual_branding_16","type":"single","question":"¿Qué representa la ley de semejanza de la Gestalt?","options":["Agrupar elementos por cercanía","Completar formas incompletas","Asociar elementos por color o forma","Resaltar trayectorias visuales"],"correctAnswer":"Asociar elementos por color o forma"},
+                    {"id":"q_diseno_visual_branding_17","type":"single","question":"¿Qué técnica puede evaluar la efectividad emocional de textos UI?","options":["Heurística visual","Test A/B con usuarios","Encuesta de satisfacción técnica","Prueba de carga en servidor"],"correctAnswer":"Test A/B con usuarios"},
+                    {"id":"q_diseno_visual_branding_18","type":"single","question":"¿Qué tono usaría una app educativa infantil en su voz de marca?","options":["Técnico y formal","Colaborativo y casual","Crítico y directo","Irónico y sarcástico"],"correctAnswer":"Colaborativo y casual"},
+                    {"id":"q_diseno_visual_branding_19","type":"single","question":"Según el modelo de Treisman, ¿qué se detecta primero en una interfaz?","options":["Elementos textuales largos","Atributos contextuales","Atributos primitivos como color o forma","Información semántica profunda"],"correctAnswer":"Atributos primitivos como color o forma"},
+                    {"id":"q_diseno_visual_branding_20","type":"single","question":"Según la ley de Gestalt de proximidad, ¿qué percibe el usuario?","options":["Diferencia entre figura y fondo","Elementos cercanos como relacionados","Elementos similares como separados","Los colores vibrantes primero"],"correctAnswer":"Elementos cercanos como relacionados"}
+                ]
+            },
+            semana2_prototipado: {
+                name: "Semana 2: Prototipado y Wireframing",
+                questions: [
+                    {"id":"q_prototipado_wireframing_1","type":"single","question":"¿Cuál de estas herramientas es ideal para crear wireframes estilo boceto?","options":["Adobe XD","Balsamiq","Sketch","Figma"],"correctAnswer":"Balsamiq"},
+                    {"id":"q_prototipado_wireframing_2","type":"single","question":"¿Cuál de las siguientes características corresponde a un wireframe?","options":["Simula microinteracciones","Contiene logotipos y estilos definidos","Usa imágenes y paletas cromáticas corporativas","Se enfoca en jerarquía de información y flujo de navegación"],"correctAnswer":"Se enfoca en jerarquía de información y flujo de navegación"},
+                    {"id":"q_prototipado_wireframing_3","type":"single","question":"¿Cuál es un objetivo del prototipado según Jakob Nielsen?","options":["Definir la estrategia de marketing","Corregir errores antes del desarrollo, reduciendo costos","Crear gráficos llamativos","Aumentar el presupuesto del proyecto"],"correctAnswer":"Corregir errores antes del desarrollo, reduciendo costos"},
+                    {"id":"q_prototipado_wireframing_4","type":"single","question":"¿Cuál es una limitación de los wireframes según Raskin?","options":["No pueden utilizarse con usuarios reales","No capturan aspectos afectivos del diseño","No permiten validar modelos mentales","Son costosos de producir"],"correctAnswer":"No capturan aspectos afectivos del diseño"},
+                    {"id":"q_prototipado_wireframing_5","type":"single","question":"¿Cuál es una ventaja de prototipar según la teoría de modelos mentales de Norman?","options":["Mejora la carga de datos","Permite validar expectativas de los usuarios","Reduce el esfuerzo de programación","Disminuye el número de pantallas del sistema"],"correctAnswer":"Permite validar expectativas de los usuarios"},
+                    {"id":"q_prototipado_wireframing_6","type":"single","question":"¿Qué característica define un mockup según los estudios de percepción visual?","options":["Ayuda a validar decisiones estéticas","Permite simular interacciones reales","No puede evaluarse con usuarios","Requiere herramientas de programación"],"correctAnswer":"Ayuda a validar decisiones estéticas"},
+                    {"id":"q_prototipado_wireframing_7","type":"single","question":"¿Qué diferencia principal existe entre un wireframe y un mockup?","options":["El wireframe muestra estructura, el mockup apariencia visual","No hay diferencia, son términos equivalentes","El mockup representa la estructura, el wireframe la apariencia","El wireframe incluye colores, el mockup no"],"correctAnswer":"El wireframe muestra estructura, el mockup apariencia visual"},
+                    {"id":"q_prototipado_wireframing_8","type":"single","question":"¿Qué elemento estaría presente en un wireframe pero no en un mockup?","options":["Tipografia corporativa","Esquemas monocromáticos","Iconos personalizados","Espaciado exacto"],"correctAnswer":"Esquemas monocromáticos"},
+                    {"id":"q_prototipado_wireframing_9","type":"single","question":"¿Qué enfoque promueve Bill Buxton al elegir el nivel de fidelidad del prototipo?","options":["Aplicar \"justo lo necesario\" según objetivos","Usar la herramienta más cara disponible","Crear primero versiones en código","Producir siempre prototipos finales"],"correctAnswer":"Aplicar \"justo lo necesario\" según objetivos"},
+                    {"id":"q_prototipado_wireframing_10","type":"single","question":"¿Qué es un wireframe en diseño UX/UI?","options":["Una animación de una pantalla móvil","Un esquema estructural sin estilos visuales","Una versión final con colores y tipografias","Una prueba de carga del sistema"],"correctAnswer":"Un esquema estructural sin estilos visuales"},
+                    {"id":"q_prototipado_wireframing_11","type":"single","question":"¿Qué herramienta de prototipado permite colaboración en tiempo real y tiene plan gratuito?","options":["Sketch","Axure RP","Figma","Adobe Illustrator"],"correctAnswer":"Figma"},
+                    {"id":"q_prototipado_wireframing_12","type":"single","question":"¿Qué herramienta es exclusiva para macOS y ofrece bibliotecas de símbolos?","options":["Balsamiq","Figma","Axure RP","Sketch"],"correctAnswer":"Sketch"},
+                    {"id":"q_prototipado_wireframing_13","type":"single","question":"¿Qué herramienta es recomendada para prototipos complejos con lógica condicional?","options":["Wireframe.cc","Paint","Axure RP","Balsamiq"],"correctAnswer":"Axure RP"},
+                    {"id":"q_prototipado_wireframing_14","type":"single","question":"¿Qué nivel de fidelidad se recomienda en etapas tempranas para validar flujos críticos?","options":["Wireframes de baja fidelidad","Diagramas UML","Mockups con estilo visual","Prototipos de alta fidelidad"],"correctAnswer":"Wireframes de baja fidelidad"},
+                    {"id":"q_prototipado_wireframing_15","type":"single","question":"¿Qué representa un prototipo de alta fidelidad?","options":["Un dibujo en papel sin conexión","Un documento con requerimientos funcionales","Una simulación interactiva similar al producto final","Una idea inicial sin estructura definida"],"correctAnswer":"Una simulación interactiva similar al producto final"},
+                    {"id":"q_prototipado_wireframing_16","type":"single","question":"¿Qué se busca con la comunicación interdisciplinaria mediante prototipos?","options":["Reducir asimetrias entre diseñadores y stakeholders","Eliminar la fase de pruebas","Validar código fuente","Aumentar el tiempo de entrega"],"correctAnswer":"Reducir asimetrias entre diseñadores y stakeholders"},
+                    {"id":"q_prototipado_wireframing_17","type":"single","question":"¿Qué tipo de herramienta es Adobe XD en su plan Starter?","options":["De pago sin prueba","Exclusiva para animaciones 3D","Gratuita para prototipos simples","Gratuita solo para wireframes"],"correctAnswer":"Gratuita para prototipos simples"},
+                    {"id":"q_prototipado_wireframing_18","type":"single","question":"¿Qué tipo de prototipo permite simular formularios y animaciones de confirmación?","options":["Mockup","Prototipo de alta fidelidad","Diagrama de flujo","Wireframe"],"correctAnswer":"Prototipo de alta fidelidad"},
+                    {"id":"q_prototipado_wireframing_19","type":"single","question":"¿Qué tipo de validación se logra en la Fase 1 del framework aplicado al desarrollo de plataformas educativas?","options":["Testeo de terminología con wireframes","Validación de contrastes visuales","Validación de microinteracciones","Evaluación de transiciones animadas"],"correctAnswer":"Testeo de terminología con wireframes"},
+                    {"id":"q_prototipado_wireframing_20","type":"single","question":"Según la Ley de Realismo de Virzi, ¿qué aumenta con la fidelidad del prototipo?","options":["La duración del desarrollo","La validez predictiva de las pruebas de usabilidad","El número de errores del sistema","El tamaño del equipo de diseño"],"correctAnswer":"La validez predictiva de las pruebas de usabilidad"}
+                ]
+            },
+            semana2_usabilidad: {
+                name: "Semana 2: Usabilidad y Heurística",
+                questions: [
+                    {"id":"q_usabilidad_heuristica_1","type":"single","question":"¿Cuál de estas afirmaciones es verdadera sobre una evaluación heuristica?","options":["Siempre requiere más de 10 evaluadores para ser útil","No necesita principios definidos para evaluarse","Se basa en comparar el diseño con principios establecidos","Es una prueba de usabilidad con usuarios finales"],"correctAnswer":"Se basa en comparar el diseño con principios establecidos"},
+                    {"id":"q_usabilidad_heuristica_2","type":"single","question":"¿Cuál de las siguientes heurísticas de Weinschenk & Barker se refiere a mostrar el estado del sistema?","options":["Coincidencia con el mundo real","Estética y diseño minimalista","Visibilidad del estado del sistema","Reconocer mejor que recordar"],"correctAnswer":"Visibilidad del estado del sistema"},
+                    {"id":"q_usabilidad_heuristica_3","type":"single","question":"¿Cuál de las siguientes NO es una característica clave de una buena usabilidad?","options":["Diseño limpio","Coherencia en los elementos","Seguridad de la información","Claridad"],"correctAnswer":"Seguridad de la información"},
+                    {"id":"q_usabilidad_heuristica_4","type":"single","question":"¿Cuándo es ideal realizar un análisis heurístico?","options":["Cuando ya se cuenta con informes de errores de usuarios","Después de lanzar el producto al mercado","Durante etapas avanzadas de diseño como prototipos","Solo al inicio del proceso de diseño"],"correctAnswer":"Durante etapas avanzadas de diseño como prototipos"},
+                    {"id":"q_usabilidad_heuristica_5","type":"single","question":"En el contexto de usabilidad, ¿por qué es importante un diseño responsive?","options":["Mejora la velocidad de procesamiento del servidor","Adapta el sitio a distintos dispositivos para facilitar la navegación","Reduce el uso de datos móviles","Permite acceder solo desde computadoras"],"correctAnswer":"Adapta el sitio a distintos dispositivos para facilitar la navegación"},
+                    {"id":"q_usabilidad_heuristica_6","type":"single","question":"La heuristica que promueve el uso de un lenguaje familiar para el usuario es:","options":["Consistencia y estándares","Flexibilidad y eficiencia de uso","Coincidencia entre el sistema y el mundo real","Ayuda y documentación"],"correctAnswer":"Coincidencia entre el sistema y el mundo real"},
+                    {"id":"q_usabilidad_heuristica_7","type":"single","question":"¿Qué afirmación es correcta respecto a la relación entre usabilidad y experiencia de usuario?","options":["Una buena usabilidad es clave para una experiencia de usuario positiva","La usabilidad mejora si la experiencia es negativa","Son conceptos completamente independientes","La experiencia de usuario solo importa si hay errores"],"correctAnswer":"Una buena usabilidad es clave para una experiencia de usuario positiva"},
+                    {"id":"q_usabilidad_heuristica_8","type":"single","question":"¿Qué aspecto es fundamental para ayudar a los usuarios a recuperarse de errores?","options":["Eliminar toda posibilidad de retroceso","Mostrar animaciones al cargar","Mensajes de error claros y orientados a la acción","Evitar mostrar mensajes de error"],"correctAnswer":"Mensajes de error claros y orientados a la acción"},
+                    {"id":"q_usabilidad_heuristica_9","type":"single","question":"¿Qué característica forma parte de las heurísticas para facilitar la interpretación?","options":["Mostrar información clara y comprensible","Utilizar jerga técnica","Reducir el contraste entre texto y fondo","Usar tipografías decorativas"],"correctAnswer":"Mostrar información clara y comprensible"},
+                    {"id":"q_usabilidad_heuristica_10","type":"single","question":"¿Qué define a la experiencia de usuario en comparación con la usabilidad?","options":["La velocidad de carga del sitio","El cumplimiento de los estándares del sistema","El lenguaje utilizado en los menús","La percepción general del usuario antes, durante y después del uso"],"correctAnswer":"La percepción general del usuario antes, durante y después del uso"},
+                    {"id":"q_usabilidad_heuristica_11","type":"single","question":"¿Qué es la usabilidad en un producto o servicio digital?","options":["La facilidad de uso y comprensión del sistema por parte del usuario","La emoción que siente el usuario al usar un sistema","La calidad gráfica del diseño visual","La utilidad económica que genera el sistema"],"correctAnswer":"La facilidad de uso y comprensión del sistema por parte del usuario"},
+                    {"id":"q_usabilidad_heuristica_12","type":"single","question":"¿Qué heurística está directamente relacionada con el principio de reconocer mejor que recordar?","options":["Mostrar opciones visibles y reducir la memoria requerida","Mostrar siempre instrucciones detalladas","No brindar ayuda para no confundir","Ocultar opciones al usuario para simplificar"],"correctAnswer":"Mostrar opciones visibles y reducir la memoria requerida"},
+                    {"id":"q_usabilidad_heuristica_13","type":"single","question":"¿Qué heurística sugiere evitar errores antes que mostrar mensajes de error?","options":["Recuperación de errores","Prevención de errores","Ayuda y documentación","Claridad de navegación"],"correctAnswer":"Prevención de errores"},
+                    {"id":"q_usabilidad_heuristica_14","type":"single","question":"¿Qué ocurre si una evaluación heurística se realiza demasiado tarde?","options":["Aumentan los costos de realizar cambios","Mejora la motivación del equipo","Se detectan más errores","No afecta el desarrollo del producto"],"correctAnswer":"Aumentan los costos de realizar cambios"},
+                    {"id":"q_usabilidad_heuristica_15","type":"single","question":"¿Qué rol cumple el \"observador\" en una evaluación heurística en grupo?","options":["Toma notas y consolida los resultados","Ejecuta pruebas automatizadas","Reemplaza al equipo de evaluación","Diseña la interfaz a evaluar"],"correctAnswer":"Toma notas y consolida los resultados"},
+                    {"id":"q_usabilidad_heuristica_16","type":"single","question":"¿Qué se debe conocer antes de realizar una evaluación heurística?","options":["Los requisitos del negocio y los usuarios","Solo las métricas técnicas de rendimiento","El presupuesto del proyecto","Solo el diseño gráfico del sistema"],"correctAnswer":"Los requisitos del negocio y los usuarios"},
+                    {"id":"q_usabilidad_heuristica_17","type":"single","question":"Según las heurísticas, ¿qué mejora la percepción en el diseño?","options":["Crear formularios complejos","Aumentar el número de pasos en la navegación","Ocultar información innecesaria","Utilizar principios visuales como agrupamiento y contraste"],"correctAnswer":"Utilizar principios visuales como agrupamiento y contraste"},
+                    {"id":"q_usabilidad_heuristica_18","type":"single","question":"Según las heurísticas, ¿qué se recomienda para reducir la carga cognitiva del usuario?","options":["Reducir la velocidad de navegación","Simplificar los procesos y no sobrecargar la memoria","Mostrar muchos elementos a la vez","Aumentar la interacción con ventanas emergentes"],"correctAnswer":"Simplificar los procesos y no sobrecargar la memoria"},
+                    {"id":"q_usabilidad_heuristica_19","type":"single","question":"Una de las características de una buena experiencia de usuario es:","options":["Complejidad visual","Facilidad de búsqueda","Abundancia de formularios","Dificultad de navegación"],"correctAnswer":"Facilidad de búsqueda"},
+                    {"id":"q_usabilidad_heuristica_20","type":"single","question":"Una interfaz que se adapta tanto a principiantes como a expertos cumple con:","options":["Reducción de ansiedad","Consistencia y estándares","Libertad de exploración","Compatibilidad con diferentes niveles de habilidad"],"correctAnswer":"Compatibilidad con diferentes niveles de habilidad"}
+                ]
+            },
+            semana3_pruebas: {
+                name: "Semana 3: Pruebas de Usuario y Métricas",
+                questions: [
+                    {"id":"q_pruebas_metricas_1","type":"single","question":"¿Cuál de los siguientes métodos se utiliza para conocer las motivaciones del usuario?","options":["Test A/B","Card Sorting","Entrevistas","Eye-Tracking"],"correctAnswer":"Entrevistas"},
+                    {"id":"q_pruebas_metricas_2","type":"single","question":"¿Cuál es el error común en entrevistas durante pruebas de usuario?","options":["Preguntar: “¿Te gusta este diseño?”","Usar cuestionarios cerrados","Pedir al usuario que describa todo","Mostrar interfaces incompletas"],"correctAnswer":"Preguntar: “¿Te gusta este diseño?”"},
+                    {"id":"q_pruebas_metricas_3","type":"single","question":"¿Cuál es el objetivo principal de una prueba con usuarios?","options":["Medir eficacia, eficiencia y satisfacción en el uso","Obtener opiniones generales del equipo","Verificar la velocidad del servidor","Aumentar las visitas al sitio web"],"correctAnswer":"Medir eficacia, eficiencia y satisfacción en el uso"},
+                    {"id":"q_pruebas_metricas_4","type":"single","question":"¿Cuál es la definición correcta de eficacia en una prueba con usuarios?","options":["Tiempo promedio en completar una tarea","Nivel de satisfacción del usuario","Si el usuario pudo o no completar una tarea","Número de clics realizados en una sesión"],"correctAnswer":"Si el usuario pudo o no completar una tarea"},
+                    {"id":"q_pruebas_metricas_5","type":"single","question":"¿Cuál es una desventaja de las pruebas no moderadas?","options":["Necesitan conexión en tiempo real","No permiten observar emociones o lenguaje corporal","Son difíciles de analizar","Requieren mucho presupuesto"],"correctAnswer":"No permiten observar emociones o lenguaje corporal"},
+                    {"id":"q_pruebas_metricas_6","type":"single","question":"¿Cuál es una herramienta recomendada para análisis de datos cuantitativos y embudos de comportamiento?","options":["Google Analytics","Card Sorting","Lighthouse","Figma"],"correctAnswer":"Google Analytics"},
+                    {"id":"q_pruebas_metricas_7","type":"single","question":"¿Cuál es una limitación de las entrevistas en pruebas de usuario?","options":["No se pueden usar en etapas iniciales","No brindan datos sobre motivación","Generan datos poco estructurados","Pueden generar sesgos por parte del moderador"],"correctAnswer":"Pueden generar sesgos por parte del moderador"},
+                    {"id":"q_pruebas_metricas_8","type":"single","question":"¿Cuál es una métrica de satisfacción en pruebas de usabilidad?","options":["Tasa de clics","Tasa de retención","Tiempo de carga","System Usability Scale (SUS)"],"correctAnswer":"System Usability Scale (SUS)"},
+                    {"id":"q_pruebas_metricas_9","type":"single","question":"¿Cuál es una ventaja del test A/B?","options":["Resultados subjetivos","Medición de emociones en tiempo real","Evaluar impacto cuantitativo de cambios","Creación de jerarquías de navegación"],"correctAnswer":"Evaluar impacto cuantitativo de cambios"},
+                    {"id":"q_pruebas_metricas_10","type":"single","question":"¿Cuándo es más recomendable realizar pruebas con usuarios?","options":["Solo después del lanzamiento","En cualquier etapa, pero mejor cuanto antes","Al final del proceso, con la versión final","Solo cuando hay errores técnicos"],"correctAnswer":"En cualquier etapa, pero mejor cuanto antes"},
+                    {"id":"q_pruebas_metricas_11","type":"single","question":"¿Para qué se usa el método Card Sorting en UX?","options":["Evaluar prototipos","Medir satisfacción","Organizar contenido y menús","Realizar encuestas"],"correctAnswer":"Organizar contenido y menús"},
+                    {"id":"q_pruebas_metricas_12","type":"single","question":"¿Por qué se recomienda realizar 3 rondas de 5 usuarios en diferentes etapas?","options":["Para maximizar la inversión en distintas fases del proyecto","Porque 5 usuarios no detectan errores","Porque Nielsen exige 15 usuarios como mínimo","Para ahorrar tiempo en análisis"],"correctAnswer":"Para maximizar la inversión en distintas fases del proyecto"},
+                    {"id":"q_pruebas_metricas_13","type":"single","question":"¿Qué herramienta permite grabar sesiones de usuario y generar mapas de calor?","options":["Sketch","Hotjar","Maze","WAVE"],"correctAnswer":"Hotjar"},
+                    {"id":"q_pruebas_metricas_14","type":"single","question":"¿Qué métrica mide la cantidad de usuarios que completan exitosamente una tarea?","options":["Net Promoter Score","Tiempo de tarea","Tasa de éxito","Tasa de abandono"],"correctAnswer":"Tasa de éxito"},
+                    {"id":"q_pruebas_metricas_15","type":"single","question":"¿Qué mide el Net Promoter Score (NPS)?","options":["Número de errores técnicos","Tiempo promedio de sesión","Probabilidad de recomendar el producto","Cantidad de pantallas por flujo"],"correctAnswer":"Probabilidad de recomendar el producto"},
+                    {"id":"q_pruebas_metricas_16","type":"single","question":"¿Qué mide la eficiencia en una prueba de usuario?","options":["Tiempo y esfuerzo para completar una tarea","Cantidad de errores por tarea","Satisfacción general con el producto","Qué tan feliz está el usuario"],"correctAnswer":"Tiempo y esfuerzo para completar una tarea"},
+                    {"id":"q_pruebas_metricas_17","type":"single","question":"¿Qué permite detectar el método Eye-Tracking?","options":["Puntos de atención visual","Tasa de conversión","Tiempos de carga","Calidad del código"],"correctAnswer":"Puntos de atención visual"},
+                    {"id":"q_pruebas_metricas_18","type":"single","question":"¿Qué permite lograr una matriz de gravedad al analizar problemas de usabilidad?","options":["Detectar clics en tiempo real","Definir la tipografía ideal","Evaluar impacto visual","Priorizar problemas por frecuencia e impacto"],"correctAnswer":"Priorizar problemas por frecuencia e impacto"},
+                    {"id":"q_pruebas_metricas_19","type":"single","question":"¿Quién propuso la regla de hacer pruebas con solo 5 usuarios?","options":["Donald Norman","Alan Cooper","Jakob Nielsen","Steve Krug"],"correctAnswer":"Jakob Nielsen"},
+                    {"id":"q_pruebas_metricas_20","type":"single","question":"Según Jakob Nielsen, ¿cuántos usuarios son necesarios para detectar el 85% de los problemas de usabilidad?","options":["10","3","5","15"],"correctAnswer":"5"}
+                ]
+            },
+            semana3_accesibilidad: {
+                name: "Semana 3: Accesibilidad e Inclusión",
+                questions: [
+                    {"id":"q_accesibilidad_1","type":"single","question":"¿Cuál de estas herramientas es una extensión profesional para detectar errores WCAG y automatizar reportes?","options":["axe DevTools","Accessibility Scanner","Google Slides","PowerPoint"],"correctAnswer":"axe DevTools"},
+                    {"id":"q_accesibilidad_2","type":"single","question":"¿Cuál es el contraste mínimo recomendado por WCAG AA para texto normal?","options":["6.5:1","4.5:1","2:1","3.5:1"],"correctAnswer":"4.5:1"},
+                    {"id":"q_accesibilidad_3","type":"single","question":"¿Cuál es un componente del checklist básico de accesibilidad?","options":["Subtítulos en videos","Párrafos largos sin estructura","Uso exclusivo del color como indicador","Tipografía caligráfica"],"correctAnswer":"Subtítulos en videos"},
+                    {"id":"q_accesibilidad_4","type":"single","question":"¿Cuál es un ejemplo de contenido comprensible según WCAG?","options":["Mensaje de error claro como “El formato del email es incorrecto”","Código encriptado","Menú animado","Texto técnico y abreviado"],"correctAnswer":"Mensaje de error claro como “El formato del email es incorrecto”"},
+                    {"id":"q_accesibilidad_5","type":"single","question":"¿Cuál es una posible sanción por no cumplir el Decreto 406/022 en Uruguay?","options":["Suspensión de la empresa","Clausura inmediata del sitio","Prohibición de emitir contenido","Multas hasta 500 UR"],"correctAnswer":"Multas hasta 500 UR"},
+                    {"id":"q_accesibilidad_6","type":"single","question":"¿Cuál es uno de los principios de las WCAG 2.1?","options":["Perceptible","Responsive","Velocidad","Visualmente atractivo"],"correctAnswer":"Perceptible"},
+                    {"id":"q_accesibilidad_7","type":"single","question":"¿Qué busca el estándar WCAG 3.0 (W3C Silver)?","options":["Eliminar lectores de pantalla","Incluir pautas para VR, voz y neurodiversidad","Reemplazar el uso de etiquetas HTML","Incluir reglas de navegación sin mouse"],"correctAnswer":"Incluir pautas para VR, voz y neurodiversidad"},
+                    {"id":"q_accesibilidad_8","type":"single","question":"¿Qué decreto en Uruguay exige el cumplimiento de WCAG 2.1 AA para sitios estatales?","options":["Ley 19.996","Decreto 133/019","Decreto 406/022","Decreto 210/023"],"correctAnswer":"Decreto 406/022"},
+                    {"id":"q_accesibilidad_9","type":"single","question":"¿Qué es la accesibilidad web?","options":["El diseño de productos digitales con gráficos optimizados","La aplicación de patrones estéticos para mejorar la visualización","La capacidad de usar animaciones avanzadas en la interfaz","El diseño para que todas las personas puedan usar un producto digital"],"correctAnswer":"El diseño para que todas las personas puedan usar un producto digital"},
+                    {"id":"q_accesibilidad_10","type":"single","question":"¿Qué etiqueta HTML permite mejorar la accesibilidad en formularios?","options":["<label for=\"id\">","<div>","<span>","<formstyle>"],"correctAnswer":"<label for=\"id\">"},
+                    {"id":"q_accesibilidad_11","type":"single","question":"¿Qué hace TalkBack en Android?","options":["Lee en voz alta el contenido en pantalla","Permite hacer zoom","Detecta virus","Realiza pruebas de velocidad"],"correctAnswer":"Lee en voz alta el contenido en pantalla"},
+                    {"id":"q_accesibilidad_12","type":"single","question":"¿Qué herramienta de Android analiza pantallas y sugiere mejoras como contraste y tamaño táctil?","options":["Google Lens","TalkBack","Material You","Accessibility Scanner"],"correctAnswer":"Accessibility Scanner"},
+                    {"id":"q_accesibilidad_13","type":"single","question":"¿Qué herramienta detecta errores de contraste y falta de texto alternativo en imágenes?","options":["Sketch","Canva","WAVE","Figma"],"correctAnswer":"WAVE"},
+                    {"id":"q_accesibilidad_14","type":"single","question":"¿Qué herramienta integrada en Chrome realiza auditorías de accesibilidad y exporta reportes?","options":["Firebase","DevTools Console","Lighthouse","PageSpeed"],"correctAnswer":"Lighthouse"},
+                    {"id":"q_accesibilidad_15","type":"single","question":"¿Qué principio WCAG garantiza compatibilidad con tecnologías asistivas como lectores de pantalla?","options":["Perceptible","Robusto","Adaptable","Estético"],"correctAnswer":"Robusto"},
+                    {"id":"q_accesibilidad_16","type":"single","question":"¿Qué principio WCAG indica que la interfaz debe poder manejarse con teclado?","options":["Inclusivo","Robusto","Estético","Operable"],"correctAnswer":"Operable"},
+                    {"id":"q_accesibilidad_17","type":"single","question":"¿Qué principio WCAG se refiere a que la información esté disponible en múltiples formatos?","options":["Robusto","Comprensible","Operable","Perceptible"],"correctAnswer":"Perceptible"},
+                    {"id":"q_accesibilidad_18","type":"single","question":"¿Qué problema puede experimentar un usuario con navegación solo por teclado?","options":["Trampas de foco en menús","Saturación de color","Falta de imágenes animadas","Tiempos de carga altos"],"correctAnswer":"Trampas de foco en menús"},
+                    {"id":"q_accesibilidad_19","type":"single","question":"¿Qué simulador se puede usar para comprender la experiencia de una persona con daltonismo?","options":["Canva Color Picker","Hotjar","Figma AI","Stark"],"correctAnswer":"Stark"},
+                    {"id":"q_accesibilidad_20","type":"single","question":"¿Qué tecnología se debe usar para asegurar que el contenido pueda ser leído por lectores de pantalla?","options":["HTML semántico","Animaciones","Formatos multimedia","Gráficos SVG"],"correctAnswer":"HTML semántico"}
+                ]
+            },
+            semana3_tendencias: {
+                name: "Semana 3: Tendencias y Herramientas",
+                questions: [
+                    {"id":"q_tendencias_1","type":"single","question":"¿Cuál de estas herramientas se puede integrar en pipelines de CI/CD?","options":["Axe-Core","Photoshop","Figma AI","Google Docs"],"correctAnswer":"Axe-Core"},
+                    {"id":"q_tendencias_2","type":"single","question":"¿Cuál es un ejemplo de personalización dinámica?","options":["Interfaz que elimina todos los botones","Cambio automático de fuente según navegador","Eliminación de formularios de registro","Activación del modo alto contraste según hábitos de usuario"],"correctAnswer":"Activación del modo alto contraste según hábitos de usuario"},
+                    {"id":"q_tendencias_3","type":"single","question":"¿Cuál es una ventaja de realizar pruebas automatizadas de accesibilidad?","options":["Detectan errores de diseño sin intervención humana","Solo funcionan con apps móviles","No se pueden usar en entornos reales","Requieren intervención constante del usuario"],"correctAnswer":"Detectan errores de diseño sin intervención humana"},
+                    {"id":"q_tendencias_4","type":"single","question":"¿Cuál es una ventaja de usar Heatmaps con IA?","options":["Aceleran los procesos legales","Ayudan a optimizar interfaces sin pruebas reales","Permiten bloquear contenido irrelevante","Crean formularios inteligentes"],"correctAnswer":"Ayudan a optimizar interfaces sin pruebas reales"},
+                    {"id":"q_tendencias_5","type":"single","question":"¿En qué se especializa la herramienta Applitools Eyes?","options":["Detección visual de errores de diseño","Traducción de etiquetas","Corrección ortográfica automática","Simulación de formularios"],"correctAnswer":"Detección visual de errores de diseño"},
+                    {"id":"q_tendencias_6","type":"single","question":"¿Para qué se utiliza el análisis predictivo con IA en UX?","options":["Traducir interfaces a múltiples idiomas","Analizar el código fuente del backend","Crear bases de datos para usuarios nuevos","Predecir zonas donde el usuario hará clic o se concentrará"],"correctAnswer":"Predecir zonas donde el usuario hará clic o se concentrará"},
+                    {"id":"q_tendencias_7","type":"single","question":"¿Por qué la combinación de IA + automatización es clave en UX?","options":["Detecta problemas antes que los usuarios reales","Permite eliminar fases de testing","Reduce la cantidad de interfaces necesarias","Evita que se usen herramientas tradicionales"],"correctAnswer":"Detecta problemas antes que los usuarios reales"},
+                    {"id":"q_tendencias_8","type":"single","question":"¿Qué característica tienen los prototipos generados con herramientas como Figma AI?","options":["Requieren programación manual","Se crean desde descripciones en lenguaje natural","Solo funcionan en navegadores antiguos","Se generan desde código fuente directamente"],"correctAnswer":"Se crean desde descripciones en lenguaje natural"},
+                    {"id":"q_tendencias_9","type":"single","question":"¿Qué combinación de herramientas se usa para automatizar pruebas funcionales y de accesibilidad?","options":["Hotjar + Figma","Webflow + Discord","Axe-Core + Selenium","PowerPoint + Trello"],"correctAnswer":"Axe-Core + Selenium"},
+                    {"id":"q_tendencias_10","type":"single","question":"¿Qué evalúa Google Lighthouse además de accesibilidad?","options":["Rendimiento, SEO y buenas prácticas","Nivel de compromiso del equipo","Satisfacción emocional de los usuarios","Costos de desarrollo"],"correctAnswer":"Rendimiento, SEO y buenas prácticas"},
+                    {"id":"q_tendencias_11","type":"single","question":"¿Qué función cumple actualmente la IA en el diseño de UX?","options":["Solo se usa para traducir contenido","Se limita a asistentes virtuales","Solo gestiona servidores remotos","Participa en la creación y evaluación de interfaces"],"correctAnswer":"Participa en la creación y evaluación de interfaces"},
+                    {"id":"q_tendencias_12","type":"single","question":"¿Qué hace Google Lighthouse en relación a UX?","options":["Evalúa velocidad únicamente","Genera auditorías de accesibilidad y SEO","Crea contenidos multilingües","Desactiva funciones innecesarias"],"correctAnswer":"Genera auditorías de accesibilidad y SEO"},
+                    {"id":"q_tendencias_13","type":"single","question":"¿Qué hace la IA en Applitools Eyes para mejorar el testeo visual?","options":["Reemplaza texto por imágenes","Muestra resultados solo en dispositivos móviles","Compara pantallas y enfoca diferencias significativas","Corrige errores automáticamente"],"correctAnswer":"Compara pantallas y enfoca diferencias significativas"},
+                    {"id":"q_tendencias_14","type":"single","question":"¿Qué permite la automatización en pruebas de usabilidad?","options":["Detectar problemas de forma constante y escalable","Reducir la calidad de las pruebas","Desactivar funciones innecesarias","Crear entrevistas personalizadas"],"correctAnswer":"Detectar problemas de forma constante y escalable"},
+                    {"id":"q_tendencias_15","type":"single","question":"¿Qué permite la automatización en UX según las tendencias actuales?","options":["Validar aspectos de usabilidad antes de la intervención humana","Ignorar las métricas de accesibilidad","Eliminar la necesidad de pruebas","Reducir la fidelidad de los prototipos"],"correctAnswer":"Validar aspectos de usabilidad antes de la intervención humana"},
+                    {"id":"q_tendencias_16","type":"single","question":"¿Qué permite la herramienta Accessibility Insights?","options":["Crear logos automáticos","Validar interfaces según WCAG","Generar contenido visual atractivo","Reescalar imágenes"],"correctAnswer":"Validar interfaces según WCAG"},
+                    {"id":"q_tendencias_17","type":"single","question":"¿Qué permite un heatmap con IA en un sitio e-commerce?","options":["Aumentar el precio de productos populares","Saber si la ubicación de botones es efectiva","Reordenar productos automáticamente","Mostrar publicidad aleatoria"],"correctAnswer":"Saber si la ubicación de botones es efectiva"},
+                    {"id":"q_tendencias_18","type":"single","question":"¿Qué permiten hacer herramientas como Uizard o Figma AI?","options":["Simular audio en interfaces","Crear gráficos en 3D","Generar prototipos desde lenguaje natural","Medir métricas de carga"],"correctAnswer":"Generar prototipos desde lenguaje natural"},
+                    {"id":"q_tendencias_19","type":"single","question":"¿Qué tipo de errores puede detectar Axe-Core?","options":["Bajo contraste y etiquetas faltantes","Formularios sin CSS","Problemas de ortografía","Compatibilidad de navegadores"],"correctAnswer":"Bajo contraste y etiquetas faltantes"},
+                    {"id":"q_tendencias_20","type":"single","question":"¿Qué ventaja ofrece la personalización dinámica basada en IA?","options":["Establece reglas fijas para todos los usuarios","Bloquea cambios en la experiencia del usuario","Elimina todo tipo de animación","Cambia la UI en tiempo real según el usuario"],"correctAnswer":"Cambia la UI en tiempo real según el usuario"}
+                ]
+            }
+        };
+
+        // --- Estado de la Aplicación ---
+        let currentQuiz = [];
+        let currentQuizKey = ''; // Clave del cuestionario actual para sessionStorage
+        let currentQuizName = ''; 
+        let currentQuestionIndex = 0;
+        let questionStates = []; // Almacena { selectedOption: string, isCorrect: boolean } para cada pregunta del intento actual
+
+        // --- Elementos del DOM (se asignarán en DOMContentLoaded) ---
+        let initialView, quizView, resultsView, quizSelectionContainer;
+        let quizTitleElement, questionCounterElement, questionTextElement, optionsContainer;
+        let scoreElement, prevQuestionButton, nextQuestionButton;
+        let completedQuizNameElement, finalScoreElement, finalPercentageElement, approvalMessageElement;
+        let feedbackMessageElement, explanationSection, explanationButton, apiLoadingExplanation, explanationContainer;
+
+        /**
+         * Inicializa el estado de un nuevo intento de cuestionario.
+         */
+        function initializeQuizAttemptState() {
+            questionStates = currentQuiz.map(() => ({
+                selectedOption: null,
+                isCorrect: false,
+                attempted: false 
+            }));
+            currentQuestionIndex = 0;
+            // El score se calcula dinámicamente basado en questionStates
+        }
+        
+        /**
+         * Calcula el puntaje actual basado en questionStates.
+         */
+        function calculateCurrentScore() {
+            return questionStates.reduce((acc, state) => acc + (state.isCorrect ? 1 : 0), 0);
+        }
+
+        /**
+         * Inicia un cuestionario.
+         * @param {string} quizKey - La clave del cuestionario en preloadedQuizzes.
+         */
+        function startSelectedQuiz(quizKey) {
+            const quizData = preloadedQuizzes[quizKey];
+            if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+                alert(`Error: No se encontraron preguntas para "${quizData.name || quizKey}".`);
+                return;
+            }
+
+            currentQuiz = shuffleArray([...quizData.questions]);
+            currentQuizKey = quizKey;
+            currentQuizName = quizData.name;
+            
+            initializeQuizAttemptState(); // Reinicia el estado para un nuevo intento
+            
+            if (quizTitleElement) quizTitleElement.textContent = currentQuizName;
+            
+            if (initialView) initialView.classList.add('hidden');
+            if (resultsView) resultsView.classList.add('hidden');
+            if (quizView) quizView.classList.remove('hidden');
+            
+            displayQuestion();
+            updateScoreDisplay(); // Mostrar score inicial (0)
+        }
+        
+        /**
+         * Muestra la pregunta actual, opciones y estado (si ya fue respondida).
+         */
+        function displayQuestion() {
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= currentQuiz.length) {
+                console.error("Índice de pregunta fuera de rango:", currentQuestionIndex);
+                if (currentQuestionIndex >= currentQuiz.length && currentQuiz.length > 0) showResults();
+                return;
+            }
+
+            const questionData = currentQuiz[currentQuestionIndex];
+            const qState = questionStates[currentQuestionIndex];
+
+            if (questionTextElement) questionTextElement.textContent = questionData.question;
+            if (questionCounterElement) questionCounterElement.textContent = `${currentQuestionIndex + 1} de ${currentQuiz.length}`;
+            
+            if (optionsContainer) optionsContainer.innerHTML = ''; 
+            
+            const shuffledOptions = shuffleArray([...questionData.options]);
+            shuffledOptions.forEach(optionText => {
+                const button = document.createElement('button');
+                button.textContent = optionText;
+                button.className = 'option-button w-full bg-slate-700 hover:bg-slate-600 text-slate-200 font-medium py-3 px-4 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500';
+                
+                if (qState.attempted) {
+                    button.disabled = true;
+                    button.classList.add('disabled-option');
+                    if (optionText === questionData.correctAnswer) {
+                        button.classList.add('correct');
+                    }
+                    if (optionText === qState.selectedOption && !qState.isCorrect) {
+                        button.classList.add('incorrect');
+                    }
+                } else {
+                    button.onclick = () => selectAnswer(optionText);
+                }
+                if (optionsContainer) optionsContainer.appendChild(button);
+            });
+
+            if (qState.attempted) {
+                if (feedbackMessageElement) {
+                    feedbackMessageElement.textContent = qState.isCorrect ? '¡Correcto!' : `Incorrecto. La respuesta correcta es: ${questionData.correctAnswer}`;
+                    feedbackMessageElement.className = `my-4 text-center font-medium h-6 ${qState.isCorrect ? 'text-green-400' : 'text-red-400'}`;
+                }
+                if (explanationSection) explanationSection.classList.remove('hidden');
+                if (explanationButton) {
+                    explanationButton.classList.remove('hidden');
+                    explanationButton.disabled = false; 
+                }
+                if (explanationContainer) { // Limpiar explicación anterior si existe
+                    explanationContainer.innerHTML = '';
+                    explanationContainer.classList.add('hidden');
+                }
+            } else {
+                if (feedbackMessageElement) {
+                    feedbackMessageElement.textContent = '';
+                    feedbackMessageElement.className = 'my-4 text-center font-medium h-6';
+                }
+                if (explanationSection) explanationSection.classList.add('hidden');
+            }
+            
+            if (prevQuestionButton) prevQuestionButton.disabled = currentQuestionIndex === 0;
+            if (nextQuestionButton) {
+                nextQuestionButton.textContent = (currentQuestionIndex === currentQuiz.length - 1) ? "Finalizar" : "Siguiente";
+                nextQuestionButton.disabled = !qState.attempted && (currentQuestionIndex < currentQuiz.length -1);
+                 if (currentQuestionIndex === currentQuiz.length - 1 && !qState.attempted) {
+                    nextQuestionButton.disabled = true; // Deshabilitar Finalizar si la última no está respondida
+                }
+            }
+            updateScoreDisplay();
+        }
+
+        /**
+         * Maneja la selección de una respuesta.
+         * @param {string} selectedOptionText - El texto de la opción seleccionada.
+         */
+        function selectAnswer(selectedOptionText) {
+            const qState = questionStates[currentQuestionIndex];
+            if (qState.attempted) return; // No permitir cambiar respuesta
+
+            const questionData = currentQuiz[currentQuestionIndex];
+            qState.selectedOption = selectedOptionText;
+            qState.isCorrect = selectedOptionText === questionData.correctAnswer;
+            qState.attempted = true;
+
+            updateScoreDisplay();
+            displayQuestion(); // Re-renderizar para mostrar estado y feedback
+        }
+        
+        /**
+         * Actualiza el contador de puntuación en la UI.
+         */
+        function updateScoreDisplay() {
+            const currentScore = calculateCurrentScore();
+            if (scoreElement) scoreElement.textContent = currentScore;
+        }
+
+        /**
+         * Navega a la pregunta anterior.
+         */
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                if (explanationContainer) explanationContainer.innerHTML = ''; // Limpiar explicación
+                if (explanationContainer) explanationContainer.classList.add('hidden');
+                if (apiLoadingExplanation) apiLoadingExplanation.classList.add('hidden');
+                if (explanationButton) explanationButton.disabled = false;
+                displayQuestion();
+            }
+        }
+
+        /**
+         * Navega a la siguiente pregunta o muestra resultados.
+         */
+        function nextQuestion() {
+            if (currentQuestionIndex < currentQuiz.length - 1) {
+                currentQuestionIndex++;
+                if (explanationContainer) explanationContainer.innerHTML = ''; // Limpiar explicación
+                if (explanationContainer) explanationContainer.classList.add('hidden');
+                if (apiLoadingExplanation) apiLoadingExplanation.classList.add('hidden');
+                if (explanationButton) explanationButton.disabled = false;
+                displayQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        /**
+         * Muestra la pantalla de resultados, guarda el progreso.
+         */
+        function showResults() {
+            if (quizView) quizView.classList.add('hidden');
+            if (resultsView) resultsView.classList.remove('hidden');
+            
+            const finalScoreValue = calculateCurrentScore();
+            const totalQuestions = currentQuiz.length;
+            const percentage = totalQuestions > 0 ? Math.round((finalScoreValue / totalQuestions) * 100) : 0;
+            const isApproved = percentage >= 60;
+
+            if (completedQuizNameElement) completedQuizNameElement.textContent = currentQuizName;
+            if (finalScoreElement) finalScoreElement.textContent = `${finalScoreValue} de ${totalQuestions}`;
+            if (finalPercentageElement) finalPercentageElement.textContent = `(${percentage}%)`;
+
+            if (approvalMessageElement) {
+                approvalMessageElement.textContent = isApproved ? "¡Aprobado!" : "No Aprobado";
+                approvalMessageElement.className = `text-2xl font-bold mb-8 ${isApproved ? 'text-green-400' : 'text-red-400'}`;
+            }
+
+            // Guardar progreso en sessionStorage
+            const progressData = {
+                name: currentQuizName,
+                score: finalScoreValue,
+                totalQuestions: totalQuestions,
+                percentage: percentage,
+                isApproved: isApproved,
+                completed: true
+            };
+            try {
+                sessionStorage.setItem(`quizProgress_${currentQuizKey}`, JSON.stringify(progressData));
+            } catch (e) {
+                console.error("Error al guardar en sessionStorage:", e);
+            }
+        }
+
+        /**
+         * Reinicia la aplicación a la vista de selección de cuestionario.
+         */
+        function restartApp() {
+            if (resultsView) resultsView.classList.add('hidden');
+            if (quizView) quizView.classList.add('hidden');
+            if (initialView) initialView.classList.remove('hidden');
+            
+            currentQuiz = [];
+            currentQuizKey = '';
+            currentQuizName = '';
+            questionStates = [];
+            currentQuestionIndex = 0;
+            // score se recalcula, no necesita reset aquí
+            
+            // Limpiar elementos de la UI del cuestionario
+            if (scoreElement) scoreElement.textContent = '0';
+            if (questionCounterElement) questionCounterElement.textContent = '';
+            if (questionTextElement) questionTextElement.textContent = '';
+            if (optionsContainer) optionsContainer.innerHTML = '';
+            if (feedbackMessageElement) {
+                 feedbackMessageElement.textContent = '';
+                 feedbackMessageElement.className = 'my-4 text-center font-medium h-6'; 
+            }
+            if (prevQuestionButton) prevQuestionButton.disabled = true;
+            if (nextQuestionButton) {
+                nextQuestionButton.disabled = true;
+                nextQuestionButton.textContent = "Siguiente";
+            }
+            
+            if (explanationContainer) explanationContainer.innerHTML = '';
+            if (explanationContainer) explanationContainer.classList.add('hidden');
+            if (apiLoadingExplanation) apiLoadingExplanation.classList.add('hidden');
+            if (explanationButton) explanationButton.disabled = false; // Re-enable for next quiz
+            if (explanationSection) explanationSection.classList.add('hidden');
+
+            renderQuizSelectionScreen(); // Actualizar la vista inicial con el progreso guardado
+        }
+
+        /**
+         * Mezcla un array (Algoritmo Fisher-Yates).
+         */
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        const API_KEY = ""; 
+
+        async function callGeminiAPI(prompt) {
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("Error API Gemini:", response.status, errorData);
+                    return `Error API: ${errorData?.error?.message || response.statusText}`;
+                }
+                const result = await response.json();
+                if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.error("Respuesta API Gemini inesperada:", result);
+                    return "No se pudo obtener respuesta del asistente.";
+                }
+            } catch (error) {
+                console.error("Error llamando API Gemini:", error);
+                return "Error de conexión. Intenta de nuevo.";
+            }
+        }
+
+        async function fetchExplanation() {
+            if (currentQuestionIndex < 0 || currentQuestionIndex >= currentQuiz.length) return;
+
+            const questionData = currentQuiz[currentQuestionIndex];
+            const questionText = questionData.question;
+            const localCorrectAnswer = questionData.correctAnswer; 
+            
+            const prompt = `Eres un asistente de cuestionarios útil. Explica brevemente (en 2-3 frases concisas) por qué la respuesta "${localCorrectAnswer}" es la correcta para la siguiente pregunta de UX/UI: "${questionText}".`;
+
+            if (explanationButton) explanationButton.disabled = true;
+            if (apiLoadingExplanation) apiLoadingExplanation.classList.remove('hidden');
+            if (explanationContainer) {
+                explanationContainer.innerHTML = '';
+                explanationContainer.classList.add('hidden');
+            }
+
+            const explanationText = await callGeminiAPI(prompt);
+
+            if (apiLoadingExplanation) apiLoadingExplanation.classList.add('hidden');
+            if (explanationContainer) {
+                explanationContainer.innerHTML = explanationText || "No se pudo generar la explicación.";
+                explanationContainer.classList.remove('hidden');
+            }
+        }
+        
+        /**
+         * Renderiza las tarjetas de selección de cuestionarios en la vista inicial,
+         * mostrando el progreso guardado si existe.
+         */
+        function renderQuizSelectionScreen() {
+            if (!quizSelectionContainer) return;
+            quizSelectionContainer.innerHTML = ''; 
+
+            Object.entries(preloadedQuizzes).forEach(([quizKey, quizDetails]) => {
+                const card = document.createElement('div');
+                card.className = 'quiz-card bg-slate-700 p-4 rounded-lg shadow-lg flex flex-col justify-between transition-all hover:shadow-sky-500/30';
+
+                let progressHTML = '<p class="text-slate-400">Aún no completado.</p>';
+                let buttonText = "Comenzar";
+                
+                try {
+                    const savedProgressString = sessionStorage.getItem(`quizProgress_${quizKey}`);
+                    if (savedProgressString) {
+                        const progress = JSON.parse(savedProgressString);
+                        if (progress && progress.completed) {
+                            const statusColor = progress.isApproved ? 'text-green-400' : 'text-red-400';
+                            progressHTML = `
+                                <p class="text-sm text-slate-400">Último Intento:</p>
+                                <p class="font-medium"><span class="${statusColor}">${progress.isApproved ? 'Aprobado' : 'No Aprobado'}</span> (${progress.percentage}%)</p>
+                                <p class="text-xs text-slate-500">${progress.score}/${progress.totalQuestions} correctas</p>
+                            `;
+                            buttonText = "Reintentar";
+                        }
+                    }
+                } catch(e) {
+                    console.error("Error al leer progreso de sessionStorage para", quizKey, e);
+                    sessionStorage.removeItem(`quizProgress_${quizKey}`); // Limpiar dato corrupto
+                }
+
+                card.innerHTML = `
+                    <div>
+                        <h4 class="text-lg font-semibold text-sky-300 mb-2">${quizDetails.name}</h4>
+                        <div class="text-sm mb-3">${progressHTML}</div>
+                    </div>
+                    <button onclick="startSelectedQuiz('${quizKey}')" class="mt-auto bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2 px-4 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-opacity-75">
+                        ${buttonText}
+                    </button>
+                `;
+                quizSelectionContainer.appendChild(card);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Asignar elementos del DOM aquí
+            initialView = document.getElementById('initial-view');
+            quizView = document.getElementById('quiz-view');
+            resultsView = document.getElementById('results-view');
+            quizSelectionContainer = document.getElementById('quiz-selection-container');
+
+            quizTitleElement = document.getElementById('quiz-title');
+            questionCounterElement = document.getElementById('question-counter');
+            questionTextElement = document.getElementById('question-text');
+            optionsContainer = document.getElementById('options-container');
+            scoreElement = document.getElementById('score');
+            prevQuestionButton = document.getElementById('prev-question-button');
+            nextQuestionButton = document.getElementById('next-question-button');
+            
+            completedQuizNameElement = document.getElementById('completed-quiz-name');
+            finalScoreElement = document.getElementById('final-score');
+            finalPercentageElement = document.getElementById('final-percentage');
+            approvalMessageElement = document.getElementById('approval-message');
+            
+            feedbackMessageElement = document.getElementById('feedback-message');
+            explanationSection = document.getElementById('explanation-section');
+            explanationButton = document.getElementById('explanation-button');
+            apiLoadingExplanation = document.getElementById('api-loading-explanation');
+            explanationContainer = document.getElementById('explanation-container');
+            
+            renderQuizSelectionScreen(); // Llenar la pantalla inicial con los cuestionarios y su progreso
+        });
+    </script>
+</body>
+</html>
