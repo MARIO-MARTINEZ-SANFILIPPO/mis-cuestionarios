@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
-<head>
+<html lang="es"> <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Cuestionario UX/UI Avanzado</title>
@@ -85,22 +84,22 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background-color: rgba(0, 0, 0, 0.75); /* Un poco más oscuro */
+            background-color: rgba(0, 0, 0, 0.75); 
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 50;
         }
-        .modal-content { /* Base para tema azulado */
-            background-color: #334155; /* slate-700 */
+        .modal-content { 
+            background-color: #334155; 
             padding: 2rem;
             border-radius: 0.75rem; 
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             width: 90%;
             max-width: 400px;
         }
-        .dark .modal-content { /* Para tema negro */
-            background-color: #1f2937; /* gray-800 */
+        .dark .modal-content { 
+            background-color: #1f2937; 
         }
 
         .theme-switch-wrapper {
@@ -112,10 +111,10 @@
             z-index: 10;
         }
         .theme-switch-wrapper span {
-            color: #9ca3af; /* gray-400 */
+            color: #9ca3af; 
         }
         .dark .theme-switch-wrapper span {
-            color: #6b7280; /* gray-500 */
+            color: #6b7280; 
         }
         .theme-switch {
             display: inline-block;
@@ -128,8 +127,8 @@
         .theme-switch input {
             display:none;
         }
-        .slider { /* Estilo para el switch en tema azulado (defecto) */
-            background-color: #475569; /* slate-600 */
+        .slider { 
+            background-color: #475569; 
             bottom: 0;
             cursor: pointer;
             left: 0;
@@ -140,7 +139,7 @@
             border-radius: 26px;
         }
         .slider:before {
-            background-color: #cbd5e1; /* slate-300 */
+            background-color: #cbd5e1; 
             bottom: 3px;
             content: "";
             height: 20px;
@@ -150,10 +149,10 @@
             width: 20px;
             border-radius: 50%;
         }
-        input:checked + .slider { /* Switch ON (tema negro profundo activo) */
+        input:checked + .slider { 
             background-color: #3b82f6; 
         }
-        .dark input:checked + .slider { /* Asegurar que el switch ON se vea bien en tema negro */
+        .dark input:checked + .slider { 
              background-color: #4f46e5; 
         }
         input:checked + .slider:before {
@@ -161,7 +160,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen p-4 py-8 flex items-center justify-center"> {/* Clases base de color eliminadas de aquí, se manejan en <style> y con .dark en <html> */}
+<body class="min-h-screen p-4 py-8 flex items-center justify-center"> 
 
     <div class="theme-switch-wrapper">
         <span>Azulado</span>
@@ -554,7 +553,7 @@
 
         function toggleTheme() {
             const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light'); // 'light' representa el tema azulado oscuro por defecto
+            localStorage.setItem('theme', isDark ? 'dark' : 'light'); 
         }
 
 
@@ -607,17 +606,19 @@
             const loadedStates = loadQuestionStatesFromStorage(quizKey);
             
             const summary = getQuizSummary(quizKey);
-            // Determinar si es un reintento basado en si el cuestionario ya fue completado (tiene resumen)
-            // o si explícitamente no es una continuación.
-            const isRetry = (summary && summary.completed && !isContinuation);
+            let buttonTextFromDOM = "Comenzar"; // Valor por defecto
+            const buttonElement = document.querySelector(`button[onclick="startSelectedQuiz('${quizKey}', ${isContinuation})"]`); // Puede ser null si el DOM no está listo
+            if (buttonElement) {
+                 buttonTextFromDOM = buttonElement.textContent.trim();
+            }
 
 
-            if (isRetry || (!isContinuation && !Object.keys(loadedStates).length)) { 
+            if (!isContinuation || buttonTextFromDOM === "Reintentar") { 
                 questionStates = {}; 
-                if (isRetry) { // Si es un reintento de un completado, borrar el resumen viejo.
+                if (buttonTextFromDOM === "Reintentar") {
                     localStorage.removeItem(`quizProgressSummary_${quizKey}`);
                 }
-            } else { // Es continuación o un comienzo de algo ya parcialmente respondido.
+            } else {
                  questionStates = loadedStates;
             }
 
@@ -663,16 +664,14 @@
             if (optionsContainer) optionsContainer.innerHTML = ''; 
             
             const displayOptionsOrder = qState.optionsOrder || shuffleArray([...questionData.options]);
-            if (!qState.optionsOrder) { // Guardar el orden de opciones si no existe para esta pregunta y este intento
+            if (!qState.optionsOrder) { 
                  questionStates[questionData.id] = { ...qState, optionsOrder: displayOptionsOrder };
-                 // No guardar en localStorage aquí, se hará al responder, salir o al completar el cuestionario
             }
 
 
             displayOptionsOrder.forEach(optionText => {
                 const button = document.createElement('button');
                 button.textContent = optionText;
-                // Aplicar estilos base y luego los específicos del modo oscuro si es necesario
                 button.className = 'option-button w-full bg-slate-200 dark:bg-slate-600 hover:bg-slate-300 dark:hover:bg-slate-500 text-slate-800 dark:text-slate-200 font-medium py-3 px-4 rounded-lg border border-slate-300 dark:border-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500';
                 
                 if (qState.attempted) {
@@ -718,7 +717,6 @@
             const questionData = currentQuiz[currentQuestionIndex];
             let qStateForId = questionStates[questionData.id];
             
-            // Si el estado no existe o no tiene optionsOrder, es la primera vez que se ve esta pregunta en este intento
             if (!qStateForId || !qStateForId.optionsOrder) {
                  const currentOptionsOnScreen = Array.from(optionsContainer.querySelectorAll('.option-button')).map(btn => btn.textContent);
                  qStateForId = { ... (qStateForId || {}), optionsOrder: currentOptionsOnScreen };
@@ -882,8 +880,10 @@
                             progressHTML = `<p class="text-sm text-gray-700 dark:text-slate-300">Progreso guardado (${attemptedCount}/${quizDetails.questions.length} respondidas).</p>`;
                             buttonText = "Continuar";
                             isContinuation = true;
-                         } else if (attemptedCount === 0) { 
+                         } else if (attemptedCount === 0 && Object.keys(savedQuestionStates).length > 0) { 
                              progressHTML = '<p class="text-sm text-gray-500 dark:text-slate-400">Listo para empezar.</p>';
+                         } else if (attemptedCount === 0 && Object.keys(savedQuestionStates).length === 0) {
+                             progressHTML = '<p class="text-sm text-gray-500 dark:text-slate-400">Aún no intentado.</p>';
                          }
                     }
                 }
@@ -939,7 +939,7 @@
                 }
                 
                 if (summary && summary.completed) {
-                    if (!attemptedThisQuiz) globalTotalAttemptedQuizzes++; // Contar si solo hay resumen y no estados (raro)
+                    if (!attemptedThisQuiz) globalTotalAttemptedQuizzes++; 
                     attemptedThisQuiz = true; 
                     globalTotalCompletedQuizzes++;
                     globalTotalPercentageSum += summary.percentage;
@@ -948,9 +948,11 @@
                 }
                 
                 if (attemptedThisQuiz) { 
-                    if (!summary || !summary.completed) { // Si se intentó pero no se completó, o si el resumen no existe pero hay estados
-                         globalTotalAttemptedQuizzes++; // Contar como intentado si hay estados pero no resumen completo
+                    if (!summary || !summary.completed) { 
+                         globalTotalAttemptedQuizzes++; 
                     }
+                    // Sumar al total global solo una vez por cuestionario intentado
+                    // (basado en si hay estados, ya que el summary solo cuenta completados)
                     globalTotalQuestionsAnsweredEver += answeredInThis; 
                     globalTotalCorrectAnswersEver += correctInThis;
                 }
@@ -963,10 +965,9 @@
                 if (quizSpecificStatsContainer) quizSpecificStatsContainer.innerHTML += detailHTML;
             });
             
-            // Corregir el conteo de totalAttemptedQuizzes para que no duplique
             let uniqueAttemptedQuizzes = new Set();
              Object.keys(preloadedQuizzes).forEach(quizKey => {
-                if (localStorage.getItem(`quizProgressSummary_${quizKey}`) || localStorage.getItem(`questionStates_${quizKey}`)) {
+                if (localStorage.getItem(`quizProgressSummary_${quizKey}`) || Object.keys(loadQuestionStatesFromStorage(quizKey)).length > 0) {
                     uniqueAttemptedQuizzes.add(quizKey);
                 }
             });
@@ -1044,11 +1045,11 @@
             };
 
             const storedTheme = localStorage.getItem('theme');
-            if (storedTheme === 'dark') { // Si el tema "negro profundo" fue guardado
-                applyTheme(true);
+            if (storedTheme === 'dark') { 
+                applyTheme(true); 
                 if (themeToggle) themeToggle.checked = true;
-            } else { // Por defecto, tema "azulado oscuro" (sin clase 'dark' en html)
-                applyTheme(false);
+            } else { 
+                applyTheme(false); 
                 if (themeToggle) themeToggle.checked = false;
             }
             if (themeToggle) themeToggle.addEventListener('change', toggleTheme);
