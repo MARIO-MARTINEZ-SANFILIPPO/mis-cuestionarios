@@ -72,11 +72,21 @@
         .dark ::-webkit-scrollbar-thumb:hover {
             background: #6b7280; /* gray-500 */
         }
-        .quiz-card {
+        .quiz-card { /* Estilo base para las tarjetas en el menú */
             min-height: 180px; 
+            background-color: #334155; /* slate-700, para el tema azulado por defecto */
+        }
+        .dark .quiz-card { /* Estilo para las tarjetas en modo negro profundo */
+            background-color: #1f2937; /* gray-800 */
         }
         .stats-section dt {
             font-weight: 600;
+        }
+        .stats-section-item { /* Para las tarjetas de estadísticas individuales */
+             background-color: #334155; /* slate-700 */
+        }
+        .dark .stats-section-item { /* Para las tarjetas de estadísticas en modo negro */
+            background-color: #1f2937; /* gray-800 */
         }
         .modal-overlay {
             position: fixed;
@@ -604,7 +614,6 @@
             currentQuizName = quizData.name;
             
             const loadedStates = loadQuestionStatesFromStorage(quizKey);
-            
             const summary = getQuizSummary(quizKey);
             
             // Determinar si es un reintento basado en si el cuestionario ya fue completado
@@ -616,7 +625,7 @@
                 questionStates = {}; 
                 localStorage.removeItem(`quizProgressSummary_${currentQuizKey}`);
                 localStorage.removeItem(`questionStates_${currentQuizKey}`);      
-            } else { // Es continuación o un "Comenzar" de algo ya parcialmente respondido.
+            } else { 
                  questionStates = loadedStates;
             }
 
@@ -854,20 +863,23 @@
 
             Object.entries(preloadedQuizzes).forEach(([quizKey, quizDetails]) => {
                 const card = document.createElement('div');
-                card.className = 'quiz-card bg-white dark:bg-slate-700 p-4 rounded-lg shadow-lg flex flex-col justify-between transition-all hover:shadow-sky-500/30';
+                // Aplicar color de fondo base para las tarjetas (que funcionará en el tema azulado oscuro)
+                // y un color diferente para el modo negro profundo.
+                card.className = 'quiz-card bg-slate-700 dark:bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col justify-between transition-all hover:shadow-sky-500/30';
 
-                let progressHTML = '<p class="text-sm text-gray-500 dark:text-slate-400">Aún no intentado.</p>';
+
+                let progressHTML = '<p class="text-sm text-slate-400 dark:text-gray-400">Aún no intentado.</p>';
                 let buttonText = "Comenzar";
                 let isContinuation = false;
                 
                 const summary = getQuizSummary(quizKey);
                 if (summary) { 
-                    const statusColor = summary.isApproved ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400';
+                    const statusColor = summary.isApproved ? 'text-green-400' : 'text-red-400'; // No necesita dark: aquí porque los colores son vibrantes
                     const statusText = summary.isApproved ? 'Aprobado' : 'No Aprobado';
                     progressHTML = `
-                        <p class="text-sm text-gray-700 dark:text-slate-300">Último Intento Completado:</p>
+                        <p class="text-sm text-slate-300 dark:text-gray-300">Último Intento Completado:</p>
                         <p class="font-semibold text-lg ${statusColor}">${statusText}</p>
-                        <p class="text-xs text-gray-500 dark:text-slate-400">${summary.score}/${summary.totalQuestions} (${summary.percentage}%)</p>
+                        <p class="text-xs text-slate-400 dark:text-gray-400">${summary.score}/${summary.totalQuestions} (${summary.percentage}%)</p>
                     `;
                     buttonText = "Reintentar";
                 } else { 
@@ -875,13 +887,13 @@
                     if (savedQuestionStates && Object.keys(savedQuestionStates).length > 0) {
                          const attemptedCount = Object.values(savedQuestionStates).filter(s => s.attempted).length;
                          if (attemptedCount > 0 && attemptedCount < quizDetails.questions.length) { 
-                            progressHTML = `<p class="text-sm text-gray-700 dark:text-slate-300">Progreso guardado (${attemptedCount}/${quizDetails.questions.length} respondidas).</p>`;
+                            progressHTML = `<p class="text-sm text-slate-300 dark:text-gray-300">Progreso guardado (${attemptedCount}/${quizDetails.questions.length} respondidas).</p>`;
                             buttonText = "Continuar";
                             isContinuation = true;
                          } else if (attemptedCount === 0 && Object.keys(savedQuestionStates).length > 0) { 
-                             progressHTML = '<p class="text-sm text-gray-500 dark:text-slate-400">Listo para empezar.</p>';
+                             progressHTML = '<p class="text-sm text-slate-400 dark:text-gray-400">Listo para empezar.</p>';
                          } else if (attemptedCount === 0 && Object.keys(savedQuestionStates).length === 0) {
-                             progressHTML = '<p class="text-sm text-gray-500 dark:text-slate-400">Aún no intentado.</p>';
+                             progressHTML = '<p class="text-sm text-slate-400 dark:text-gray-400">Aún no intentado.</p>';
                          }
                     }
                 }
@@ -892,7 +904,7 @@
 
                 card.innerHTML = `
                     <div>
-                        <h4 class="text-lg font-semibold text-sky-600 dark:text-sky-300 mb-2">${quizDetails.name}</h4>
+                        <h4 class="text-lg font-semibold text-sky-300 dark:text-sky-400 mb-2">${quizDetails.name}</h4>
                         <div class="text-sm mb-3 min-h-[60px]">${progressHTML}</div>
                     </div>
                     <button onclick="startSelectedQuiz('${quizKey}', ${isContinuation})" class="mt-auto ${buttonColorClass} text-white font-semibold py-2 px-4 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-opacity-75">
@@ -918,7 +930,7 @@
             let globalTotalQuestionsAnsweredEver = 0;
             let globalTotalCorrectAnswersEver = 0;
 
-            if (quizSpecificStatsContainer) quizSpecificStatsContainer.innerHTML = '<h3 class="text-xl font-semibold text-sky-700 dark:text-sky-300 mb-3">Detalle por Cuestionario:</h3>'; 
+            if (quizSpecificStatsContainer) quizSpecificStatsContainer.innerHTML = '<h3 class="text-xl font-semibold text-sky-300 dark:text-sky-400 mb-3">Detalle por Cuestionario:</h3>'; 
 
             Object.keys(preloadedQuizzes).forEach(quizKey => {
                 const quizDetails = preloadedQuizzes[quizKey];
@@ -926,14 +938,16 @@
                 const states = loadQuestionStatesFromStorage(quizKey);
                 
                 let attemptedThisQuiz = false;
-                let detailHTML = `<div class="bg-gray-50 dark:bg-slate-700 p-3 rounded-md shadow mb-3"><p class="font-medium text-sky-600 dark:text-sky-200">${quizDetails.name}</p>`;
+                // Aplicar color de fondo base a las tarjetas de estadísticas y uno diferente para el modo negro profundo
+                let detailHTML = `<div class="stats-section-item bg-slate-700 dark:bg-gray-800 p-3 rounded-md shadow mb-3"><p class="font-medium text-sky-300 dark:text-sky-200">${quizDetails.name}</p>`;
+
 
                 const answeredInThis = Object.values(states).filter(s => s.attempted).length;
                 const correctInThis = Object.values(states).filter(s => s.isCorrect).length;
 
                 if (answeredInThis > 0) {
                     attemptedThisQuiz = true;
-                    detailHTML += `<p class="text-xs text-gray-600 dark:text-slate-400">Respondidas: ${answeredInThis}/${quizDetails.questions.length}, Aciertos: ${correctInThis}</p>`;
+                    detailHTML += `<p class="text-xs text-slate-400 dark:text-gray-400">Respondidas: ${answeredInThis}/${quizDetails.questions.length}, Aciertos: ${correctInThis}</p>`;
                 }
                 
                 if (summary && summary.completed) {
@@ -941,7 +955,7 @@
                     attemptedThisQuiz = true; 
                     globalTotalCompletedQuizzes++;
                     globalTotalPercentageSum += summary.percentage;
-                    const statusColor = summary.isApproved ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400';
+                    const statusColor = summary.isApproved ? 'text-green-400' : 'text-red-400';
                     detailHTML += `<p class="text-xs ${statusColor}">Últ. completado: ${summary.isApproved ? 'Aprobado' : 'No Aprobado'} (${summary.percentage}%)</p>`;
                 }
                 
@@ -955,7 +969,7 @@
 
 
                 if (!attemptedThisQuiz && (!states || Object.keys(states).length === 0)) { 
-                     detailHTML += `<p class="text-xs text-gray-500 dark:text-slate-500">Aún no intentado.</p>`;
+                     detailHTML += `<p class="text-xs text-slate-500 dark:text-gray-500">Aún no intentado.</p>`;
                 }
                 detailHTML += `</div>`;
                 if (quizSpecificStatsContainer) quizSpecificStatsContainer.innerHTML += detailHTML;
