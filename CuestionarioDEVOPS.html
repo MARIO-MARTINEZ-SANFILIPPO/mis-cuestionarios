@@ -133,6 +133,28 @@
             { type: 'multiple-choice', question: '¿Qué comando de Git usarías para guardar temporalmente tus cambios no comiteados sin crear un commit?', options: ['git save', 'git hold', 'git stash', 'git store'], answer: 'git stash' },
             { type: 'multiple-choice', question: '¿Qué es un "volumen" en Docker?', options: ['El tamaño de una imagen', 'Un mecanismo para persistir datos generados por y usados en contenedores', 'La cantidad de RAM asignada a un contenedor', 'Una red virtual de Docker'], answer: 'Un mecanismo para persistir datos generados por y usados en contenedores' },
             { type: 'multiple-choice', question: '¿Cuál es el objetivo principal de la fase de "Monitoreo y Feedback" en el ciclo de DevOps?', options: ['Desplegar nuevas versiones', 'Escribir código', 'Recopilar datos del rendimiento en producción para informar futuras mejoras', 'Realizar pruebas de seguridad'], answer: 'Recopilar datos del rendimiento en producción para informar futuras mejoras' },
+            
+            // --- NEW QUESTIONS START HERE ---
+            { type: 'matching', question: 'Relaciona cada fase del ciclo de trabajo DevOps con su actividad principal.', pairs: { 'Planificar': 'Definir requisitos y priorizar tareas.', 'Construir (Build)': 'Compilar el código y crear un artefacto desplegable.', 'Probar (Test)': 'Ejecutar validaciones automáticas para asegurar la calidad.', 'Operar': 'Mantener la aplicación funcionando en producción.' } },
+            { type: 'matching', question: 'Compara Contenedores y Máquinas Virtuales.', pairs: { 'Contenedores': 'Comparten el kernel del sistema operativo anfitrión.', 'Máquinas Virtuales': 'Tienen su propio sistema operativo completo y virtualizan hardware.', 'Tiempo de arranque': 'Mucho más rápido en contenedores.', 'Nivel de aislamiento': 'Mayor en máquinas virtuales.' } },
+            { type: 'multiple-choice', question: 'En Python, ¿qué tipo de dato se define con llaves `{}` y almacena pares clave-valor?', options: ['Lista', 'Tupla', 'Set', 'Diccionario'], answer: 'Diccionario' },
+            { type: 'multiple-choice', question: '¿Qué hace la función `len()` en Python?', options: ['Calcula el logaritmo de un número.', 'Devuelve la longitud (número de ítems) de un objeto.', 'Convierte un texto a minúsculas.', 'Redondea un número.'], answer: 'Devuelve la longitud (número de ítems) de un objeto.' },
+            { type: 'multiple-choice', question: 'El constructor de una clase en Python se define con el método especial:', options: ['__main__', '__construct__', '__init__', '__start__'], answer: '__init__' },
+            { type: 'multiple-choice', question: '¿Qué símbolo se usa para comentarios de una sola línea en Python?', options: ['//', '/*', '#', '--'], answer: '#' },
+            { type: 'multiple-choice', question: 'La herencia en Programación Orientada a Objetos permite a una clase:', options: ['Solo usar sus propios métodos.', 'Reutilizar y extender la funcionalidad de una clase padre.', 'Ignorar todos los métodos de otras clases.', 'Tener múltiples constructores.'], answer: 'Reutilizar y extender la funcionalidad de una clase padre.' },
+            { type: 'multiple-choice', question: '¿Qué método de lista elimina el último elemento por defecto si no se especifica un índice?', options: ['.remove()', '.delete()', '.pop()', '.discard()'], answer: '.pop()' },
+            { type: 'multiple-choice', question: 'Para acceder al valor asociado a una clave "nombre" en un diccionario `d`, la sintaxis correcta es:', options: ['d("nombre")', 'd.get_value("nombre")', 'd["nombre"]', 'd.nombre'], answer: 'd["nombre"]' },
+            { type: 'multiple-choice', question: '¿Qué hace la sentencia `return` dentro de una función en Python?', options: ['Imprime un valor en la consola.', 'Termina la ejecución de toda la aplicación.', 'Sale de la función y opcionalmente devuelve un valor.', 'Inicia un bucle.'], answer: 'Sale de la función y opcionalmente devuelve un valor.' },
+            { type: 'multiple-choice', question: '¿Qué es un "módulo" en Python?', options: ['Un tipo de dato numérico.', 'Un archivo .py que contiene definiciones y declaraciones de Python.', 'Una función anónima.', 'Un comentario especial.'], answer: 'Un archivo .py que contiene definiciones y declaraciones de Python.' },
+            { type: 'multiple-choice', question: '¿Cómo se convierte un string que contiene un número a un tipo entero en Python?', options: ['str_to_int()', 'integer()', 'parse.int()', 'int()'], answer: 'int()' },
+            { type: 'multiple-choice', question: '¿Qué operador se usa para verificar si dos valores son iguales en Python?', options: ['=', '==', '===', '!='], answer: '==' },
+            { type: 'multiple-choice', question: 'El bucle `while` en Python se ejecuta mientras su condición sea:', options: ['Falsa', 'Nula', 'Verdadera', 'Indefinida'], answer: 'Verdadera' },
+            { type: 'multiple-choice', question: '¿Qué método de diccionario devuelve todos sus valores?', options: ['.items()', '.keys()', '.values()', '.get_all()'], answer: '.values()' },
+            { type: 'multiple-choice', question: 'La palabra clave `super()` se usa en el contexto de herencia para:', options: ['Crear una superclase.', 'Llamar a métodos de la clase padre (superclase).', 'Definir una variable global.', 'Hacer un método más importante.'], answer: 'Llamar a métodos de la clase padre (superclase).' },
+            { type: 'multiple-choice', question: '¿Qué representa el parámetro `self` en un método de una clase de Python?', options: ['La clase misma.', 'Una referencia a la instancia actual del objeto.', 'Una variable global.', 'El método padre.'], answer: 'Una referencia a la instancia actual del objeto.' },
+            { type: 'multiple-choice', question: '¿Qué tipo de error se produce al intentar dividir un número por cero en Python?', options: ['TypeError', 'ValueError', 'SyntaxError', 'ZeroDivisionError'], answer: 'ZeroDivisionError' },
+            { type: 'multiple-choice', question: '¿Qué comando de Git se usa para ver las diferencias entre el Staging Area y el último commit?', options: ['git diff', 'git diff --staged', 'git status', 'git diff HEAD'], answer: 'git diff --staged' },
+            { type: 'multiple-choice', question: '¿Cuál es el propósito del archivo `.gitignore`?', options: ['Guardar una copia de seguridad del repositorio.', 'Especificar archivos y directorios que Git debe ignorar.', 'Contener la configuración global de Git.', 'Listar los autores del proyecto.'], answer: 'Especificar archivos y directorios que Git debe ignorar.' },
         ];
 
         let shuffledQuizData = [];
@@ -368,7 +390,6 @@
             shuffledQuizData.forEach((question, index) => {
                 const userAnswer = userAnswers[index];
                 let isCorrect = false;
-                let reviewHtml = '';
 
                 if (userAnswer === null) {
                     unansweredCount++;
@@ -394,18 +415,24 @@
                     incorrectCount++;
                 }
                 
-                // Show all questions in review
-                reviewHtml = `
+                let answerDisplay = question.answer;
+                if (question.type === 'matching') {
+                    answerDisplay = Object.entries(question.pairs).map(([c, d]) => `<li><b>${c}:</b> ${d}</li>`).join('');
+                    answerDisplay = `<ul class="list-disc list-inside text-left">${answerDisplay}</ul>`;
+                }
+
+                const reviewHtml = `
                     <div class="p-4 rounded-lg ${isCorrect ? 'bg-green-100 dark:bg-green-800/30' : 'bg-red-100 dark:bg-red-800/30'}">
                         <p class="font-bold">${index + 1}. ${question.question}</p>
-                        <p class="mt-2 text-sm">Tu respuesta: <span class="font-semibold">${userAnswer !== null ? userAnswer : 'No respondida'}</span></p>
-                        ${!isCorrect ? `<p class="mt-1 text-sm">Respuesta correcta: <strong class="text-green-800 dark:text-green-300">${question.answer || 'Ver asociaciones correctas'}</strong></p>` : ''}
+                        <p class="mt-2 text-sm">Tu respuesta: <span class="font-semibold">${userAnswer !== null ? (typeof userAnswer === 'object' ? '' : userAnswer) : 'No respondida'}</span></p>
+                        ${!isCorrect ? `<p class="mt-1 text-sm">Respuesta correcta: <strong class="text-green-800 dark:text-green-300">${answerDisplay}</strong></p>` : ''}
                     </div>
                 `;
                  answersReviewContainer.innerHTML += reviewHtml;
             });
 
             const totalQuestions = shuffledQuizData.length;
+            incorrectCount += unansweredCount; // Add unanswered to incorrect for calculation
             const percentage = totalQuestions > 0 ? ((score / totalQuestions) * 100).toFixed(2) : 0;
 
             scoreContainer.innerHTML = `
@@ -441,6 +468,9 @@
 
 </body>
 </html>
+
+    
+
 
 
 
