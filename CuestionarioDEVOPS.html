@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cuestionario de Repaso: DevOps</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="text/javascript">document.oncontextmenu = function(){return false;}</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <script type="text/javascript">document.oncontextmenu = function(){return false;}</script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
     <script>
@@ -28,13 +28,16 @@
         .drop-zone { border-style: dashed; }
         .drag-over { background-color: #e0f2fe; }
         .dark .drag-over { background-color: #374151; }
+        .correct-answer { background-color: #dcfce7 !important; border-color: #4ade80 !important; }
+        .dark .correct-answer { background-color: #166534 !important; }
+        .incorrect-answer { background-color: #fee2e2 !important; border-color: #f87171 !important; }
+        .dark .incorrect-answer { background-color: #991b1b !important; }
     </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-sans transition-colors duration-300">
 
     <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-4xl">
         
-        <!-- Encabezado y control de modo oscuro -->
         <header class="flex justify-between items-center mb-8">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white">Quiz de DevOps</h1>
             <div class="flex items-center">
@@ -47,29 +50,30 @@
             </div>
         </header>
 
-        <!-- Contenedor del Quiz -->
         <div id="quiz-container" class="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-lg">
+            <div class="flex justify-between items-center mb-6">
+                 <button id="start-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors duration-300">Ir al Principio</button>
+                 <div id="progress-indicator" class="text-sm font-semibold text-gray-600 dark:text-gray-400"></div>
+                 <button id="end-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition-colors duration-300">Ir al Final</button>
+            </div>
             <div id="question-container">
                 <!-- Las preguntas se cargarán aquí -->
             </div>
+            <div id="feedback-container" class="mt-4"></div>
             <div class="mt-8 flex justify-between items-center">
                 <button id="prev-btn" class="bg-gray-300 hover:bg-gray-400 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
-                <div id="progress-indicator" class="text-sm text-gray-600 dark:text-gray-400"></div>
+                <button id="submit-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">Finalizar Quiz</button>
                 <button id="next-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">Siguiente</button>
-                <button id="submit-btn" class="hidden bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300">Finalizar</button>
             </div>
         </div>
 
     </div>
 
-    <!-- Modal de Resultados -->
     <div id="results-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8">
             <h2 class="text-3xl font-bold text-center mb-4 text-gray-900 dark:text-white">Resultados del Quiz</h2>
             <div id="score-container" class="text-center text-2xl font-semibold mb-6"></div>
-            <div id="answers-review-container" class="space-y-4">
-                <!-- La revisión de respuestas se cargará aquí -->
-            </div>
+            <div id="answers-review-container" class="space-y-4"></div>
             <div class="text-center mt-8">
                 <button id="restart-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300">Intentar de Nuevo</button>
             </div>
@@ -89,73 +93,56 @@
             { type: 'multiple-choice', question: '¿Qué comando de Git se utiliza para crear una nueva rama y cambiar a ella inmediatamente?', options: ['git branch <nombre>', 'git checkout -b <nombre>', 'git switch <nombre>', 'git new-branch <nombre>'], answer: 'git checkout -b <nombre>' },
             { type: 'multiple-choice', question: '¿Cuál es el propósito del comando `git pull`?', options: ['Subir cambios al repositorio remoto', 'Descargar cambios del remoto y fusionarlos', 'Ver el estado de los archivos', 'Crear un nuevo commit'], answer: 'Descargar cambios del remoto y fusionarlos' },
             { type: 'multiple-choice', question: 'El área donde Git almacena los cambios que serán incluidos en el próximo commit se llama:', options: ['Working Directory', 'Stash', 'Staging Area (Index)', 'Remote Repository'], answer: 'Staging Area (Index)' },
-            { type: 'code', question: 'Completa el comando para añadir todos los archivos modificados al Staging Area.', code: 'git add ¿?', answer: '.' },
-            { type: 'code', question: '¿Qué comando usarías para fusionar la rama "feature" en tu rama actual "main"?', code: 'git ¿?', answer: 'merge feature' },
+            { type: 'multiple-choice', question: '¿Qué comando añade todos los archivos modificados al Staging Area?', options: ['git add .', 'git add *', 'git add --all', 'Todas son correctas'], answer: 'Todas son correctas' },
+            { type: 'multiple-choice', question: '¿Qué comando usarías para fusionar la rama "feature" en tu rama actual "main"?', options: ['git merge feature', 'git commit feature', 'git push feature', 'git branch feature'], answer: 'git merge feature' },
             
             // Python
             { type: 'multiple-choice', question: 'En Python, ¿qué método se usa para añadir un elemento al final de una lista?', options: ['.insert()', '.add()', '.extend()', '.append()'], answer: '.append()' },
             { type: 'multiple-choice', question: '¿Cuál es la principal característica de una tupla en Python?', options: ['Es mutable', 'Es inmutable (no se puede modificar)', 'Solo puede contener números', 'No mantiene un orden'], answer: 'Es inmutable (no se puede modificar)' },
             { type: 'multiple-choice', question: 'Para ejecutar un comando del sistema operativo en un script de Python, ¿qué módulo es comúnmente utilizado?', options: ['math', 'requests', 'os o subprocess', 'json'], answer: 'os o subprocess' },
-            { type: 'code', question: 'Completa el código para imprimir cada clave de un diccionario llamado `mi_dict`.', code: 'for clave in ¿?:\n    print(clave)', answer: 'mi_dict' },
-            { type: 'code', question: '¿Qué palabra clave se utiliza en Python para definir una función?', code: '¿? mi_funcion():\n    pass', answer: 'def' },
+            { type: 'multiple-choice', question: '¿Cómo imprimes cada clave de un diccionario llamado `mi_dict`?', options: ['for clave in mi_dict.keys():', 'for clave in mi_dict.values():', 'for clave in mi_dict:', 'for clave in mi_dict.items():'], answer: 'for clave in mi_dict:' },
+            { type: 'multiple-choice', question: '¿Qué palabra clave se utiliza en Python para definir una función?', options: ['function', 'def', 'fun', 'define'], answer: 'def' },
 
             // Docker
             { type: 'multiple-choice', question: '¿Qué es una Imagen de Docker?', options: ['Un contenedor en ejecución', 'Un script de instalación', 'Una plantilla de solo lectura para crear contenedores', 'Un volumen de datos'], answer: 'Una plantilla de solo lectura para crear contenedores' },
             { type: 'multiple-choice', question: '¿Qué comando de Docker lista todos los contenedores, incluyendo los detenidos?', options: ['docker ps', 'docker images', 'docker ps -a', 'docker list all'], answer: 'docker ps -a' },
             { type: 'multiple-choice', question: 'En un `Dockerfile`, ¿qué instrucción se usa para copiar archivos desde el host al contenedor?', options: ['ADD', 'COPY', 'MOVE', 'INSERT'], answer: 'COPY' },
-            { type: 'code', question: 'Completa la instrucción para exponer el puerto 5000 en un `Dockerfile`.', code: '¿? 5000', answer: 'EXPOSE' },
-            { type: 'code', question: '¿Qué comando usarías para abrir una terminal interactiva dentro de un contenedor en ejecución llamado "mi_app"?', code: 'docker exec ¿?', answer: '-it mi_app bash' },
+            { type: 'multiple-choice', question: '¿Qué instrucción expone el puerto 5000 en un `Dockerfile`?', options: ['PORT 5000', 'OPEN 5000', 'EXPOSE 5000', 'LISTEN 5000'], answer: 'EXPOSE 5000' },
+            { type: 'multiple-choice', question: '¿Qué comando abre una terminal interactiva en un contenedor llamado "mi_app"?', options: ['docker exec -it mi_app bash', 'docker --interactive mi_app', 'docker attach mi_app sh', 'docker run mi_app'], answer: 'docker exec -it mi_app bash' },
 
             // Matching Concepts
-            {
-                type: 'matching',
-                question: 'Une cada comando de Git con su función.',
-                pairs: {
-                    'git commit': 'Guarda los cambios del Staging Area en el historial local.',
-                    'git push': 'Envía los commits locales a un repositorio remoto.',
-                    'git status': 'Muestra el estado de los archivos en el directorio de trabajo.',
-                    'git merge': 'Combina el historial de diferentes ramas en una sola.'
-                }
-            },
-            {
-                type: 'matching',
-                question: 'Relaciona cada instrucción de Dockerfile con su propósito.',
-                pairs: {
-                    'FROM': 'Especifica la imagen base para la construcción.',
-                    'RUN': 'Ejecuta un comando y crea una nueva capa en la imagen.',
-                    'WORKDIR': 'Establece el directorio de trabajo para las instrucciones siguientes.',
-                    'CMD': 'Define el comando por defecto a ejecutar al iniciar el contenedor.'
-                }
-            },
+            { type: 'matching', question: 'Une cada comando de Git con su función.', pairs: { 'git commit': 'Guarda los cambios del Staging Area en el historial local.', 'git push': 'Envía los commits locales a un repositorio remoto.', 'git status': 'Muestra el estado de los archivos en el directorio de trabajo.', 'git merge': 'Combina el historial de diferentes ramas en una sola.' } },
+            { type: 'matching', question: 'Relaciona cada instrucción de Dockerfile con su propósito.', pairs: { 'FROM': 'Especifica la imagen base para la construcción.', 'RUN': 'Ejecuta un comando y crea una nueva capa en la imagen.', 'WORKDIR': 'Establece el directorio de trabajo para las instrucciones siguientes.', 'CMD': 'Define el comando por defecto a ejecutar al iniciar el contenedor.' } },
             
             // More questions
             { type: 'multiple-choice', question: '¿Qué es un "anti-patrón" en DevOps?', options: ['Una herramienta de seguridad', 'Una práctica que va en contra de los principios de DevOps, como los despliegues manuales', 'Un tipo de prueba automatizada', 'Una metodología de gestión de proyectos'], answer: 'Una práctica que va en contra de los principios de DevOps, como los despliegues manuales' },
             { type: 'multiple-choice', question: 'La charla "10+ Deploys Per Day" de Flickr en 2009 es considerada un hito porque:', options: ['Introdujo el lenguaje Python', 'Demostró que la velocidad y la estabilidad no son mutuamente excluyentes', 'Creó el primer contenedor', 'Definió el Manifiesto Ágil'], answer: 'Demostró que la velocidad y la estabilidad no son mutuamente excluyentes' },
             { type: 'multiple-choice', question: '¿Qué comando de Git te permite ver el historial de commits de tu repositorio?', options: ['git status', 'git diff', 'git log', 'git show'], answer: 'git log' },
-            { type: 'code', question: 'En Python, ¿cómo se define un diccionario vacío?', code: 'mi_variable = ¿?', answer: '{}' },
+            { type: 'multiple-choice', question: 'En Python, ¿cómo se define un diccionario vacío?', options: ['list()', '()', '{}', 'dict[]'], answer: '{}' },
             { type: 'multiple-choice', question: '¿Para qué sirve el comando `docker rm`?', options: ['Para eliminar una imagen', 'Para reiniciar un contenedor', 'Para eliminar uno o más contenedores detenidos', 'Para renombrar un contenedor'], answer: 'Para eliminar uno o más contenedores detenidos' },
             { type: 'multiple-choice', question: '¿Cuál de estas opciones NO es un beneficio directo de adoptar DevOps?', options: ['Mayor calidad y confiabilidad', 'Entrega más rápida de proyectos', 'Eliminación completa de la necesidad de un equipo de operaciones', 'Mayor colaboración y comunicación'], answer: 'Eliminación completa de la necesidad de un equipo de operaciones' },
-            { type: 'code', question: 'Completa el comando de Git para descartar los cambios en un archivo específico del directorio de trabajo.', code: 'git checkout -- ¿?', answer: 'nombre_del_archivo.txt' },
+            { type: 'multiple-choice', question: '¿Qué comando de Git descarta los cambios en un archivo específico del directorio de trabajo?', options: ['git checkout -- <file>', 'git reset <file>', 'git revert <file>', 'git clean <file>'], answer: 'git checkout -- <file>' },
             { type: 'multiple-choice', question: 'En Python, ¿qué hace el método `.keys()` en un diccionario?', options: ['Devuelve una lista de todos los valores', 'Devuelve una lista de todas las claves', 'Elimina una clave específica', 'Añade una nueva clave'], answer: 'Devuelve una lista de todas las claves' },
             { type: 'multiple-choice', question: '¿Qué es Docker Hub?', options: ['La interfaz de línea de comandos de Docker', 'Un registro público de imágenes de Docker', 'El motor que ejecuta los contenedores', 'Un archivo de configuración de Docker'], answer: 'Un registro público de imágenes de Docker' },
-            { type: 'code', question: 'En un Dockerfile, ¿qué instrucción usarías para instalar `git` usando el gestor de paquetes `apt-get`?', code: '¿? apt-get update && apt-get install -y git', answer: 'RUN' },
+            { type: 'multiple-choice', question: 'En un Dockerfile, ¿qué instrucción usarías para instalar `git` usando `apt-get`?', options: ['CMD apt-get install -y git', 'RUN apt-get update && apt-get install -y git', 'EXEC apt-get install -y git', 'DO apt-get install -y git'], answer: 'RUN apt-get update && apt-get install -y git' },
             { type: 'multiple-choice', question: '¿Qué significa que Git es un sistema de control de versiones "distribuido"?', options: ['Que solo funciona en la nube', 'Que cada desarrollador tiene una copia completa del historial del repositorio', 'Que necesita un servidor central para funcionar', 'Que los archivos se guardan en múltiples servidores'], answer: 'Que cada desarrollador tiene una copia completa del historial del repositorio' },
-            { type: 'multiple-choice', question: '¿Cuál es el propósito de la instrucción `MAINTAINER` (o `LABEL maintainer`) en un Dockerfile?', options: ['Define el usuario que ejecutará la aplicación', 'Especifica el autor o mantenedor de la imagen', 'Instala paquetes de mantenimiento', 'Limita los recursos del contenedor'], answer: 'Especifica el autor o mantenedor de la imagen' },
-            { type: 'code', question: 'En Python, ¿cómo se importa la librería `os`?', code: '¿? os', answer: 'import' },
+            { type: 'multiple-choice', question: '¿Cuál es el propósito de la instrucción `LABEL maintainer` en un Dockerfile?', options: ['Define el usuario que ejecutará la aplicación', 'Especifica el autor o mantenedor de la imagen', 'Instala paquetes de mantenimiento', 'Limita los recursos del contenedor'], answer: 'Especifica el autor o mantenedor de la imagen' },
+            { type: 'multiple-choice', question: 'En Python, ¿cómo se importa la librería `os`?', options: ['include os', 'require os', 'import os', 'use os'], answer: 'import os' },
             { type: 'multiple-choice', question: '¿Qué comando de Docker te permite ver los logs de un contenedor en ejecución?', options: ['docker info', 'docker inspect', 'docker logs', 'docker stats'], answer: 'docker logs' },
             { type: 'multiple-choice', question: 'El concepto "Just in Time" está asociado principalmente con:', options: ['Docker', 'Git', 'El Manifiesto Ágil', 'El Sistema de Producción Toyota (LEAN)'], answer: 'El Sistema de Producción Toyota (LEAN)' },
-            { type: 'code', question: '¿Qué comando de Git usarías para guardar temporalmente tus cambios no comiteados sin crear un commit?', code: 'git ¿?', answer: 'stash' },
+            { type: 'multiple-choice', question: '¿Qué comando de Git usarías para guardar temporalmente tus cambios no comiteados sin crear un commit?', options: ['git save', 'git hold', 'git stash', 'git store'], answer: 'git stash' },
             { type: 'multiple-choice', question: '¿Qué es un "volumen" en Docker?', options: ['El tamaño de una imagen', 'Un mecanismo para persistir datos generados por y usados en contenedores', 'La cantidad de RAM asignada a un contenedor', 'Una red virtual de Docker'], answer: 'Un mecanismo para persistir datos generados por y usados en contenedores' },
             { type: 'multiple-choice', question: '¿Cuál es el objetivo principal de la fase de "Monitoreo y Feedback" en el ciclo de DevOps?', options: ['Desplegar nuevas versiones', 'Escribir código', 'Recopilar datos del rendimiento en producción para informar futuras mejoras', 'Realizar pruebas de seguridad'], answer: 'Recopilar datos del rendimiento en producción para informar futuras mejoras' },
         ];
 
-
-        // Lógica del Quiz
         const darkModeToggle = document.getElementById('dark-mode-toggle');
         const questionContainer = document.getElementById('question-container');
+        const feedbackContainer = document.getElementById('feedback-container');
         const prevBtn = document.getElementById('prev-btn');
         const nextBtn = document.getElementById('next-btn');
         const submitBtn = document.getElementById('submit-btn');
+        const startBtn = document.getElementById('start-btn');
+        const endBtn = document.getElementById('end-btn');
         const progressIndicator = document.getElementById('progress-indicator');
         const resultsModal = document.getElementById('results-modal');
         const scoreContainer = document.getElementById('score-container');
@@ -165,15 +152,9 @@
         let currentQuestionIndex = 0;
         let userAnswers = new Array(quizData.length).fill(null);
 
-        // Dark Mode
         darkModeToggle.addEventListener('change', () => {
-            if (darkModeToggle.checked) {
-                document.documentElement.classList.add('dark');
-                localStorage.setItem('darkMode', 'enabled');
-            } else {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('darkMode', 'disabled');
-            }
+            document.documentElement.classList.toggle('dark', darkModeToggle.checked);
+            localStorage.setItem('darkMode', darkModeToggle.checked ? 'enabled' : 'disabled');
         });
 
         if (localStorage.getItem('darkMode') === 'enabled') {
@@ -183,128 +164,142 @@
 
         function renderQuestion() {
             const questionData = quizData[currentQuestionIndex];
+            feedbackContainer.innerHTML = '';
             let html = `<h2 class="text-2xl font-bold mb-6">${currentQuestionIndex + 1}. ${questionData.question}</h2>`;
 
             if (questionData.type === 'multiple-choice') {
-                html += `<div class="space-y-3">`;
+                html += `<div class="space-y-3" id="options-container">`;
                 questionData.options.forEach(option => {
-                    const isChecked = userAnswers[currentQuestionIndex] === option;
                     html += `
                         <label class="flex items-center p-4 border-2 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
-                            <input type="radio" name="option" value="${option}" class="form-radio h-5 w-5 text-blue-600" ${isChecked ? 'checked' : ''}>
+                            <input type="radio" name="option" value="${option}" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500">
                             <span class="ml-4 text-lg">${option}</span>
                         </label>
                     `;
                 });
                 html += `</div>`;
-            } else if (questionData.type === 'code') {
-                html += `
-                    <div class="bg-gray-800 dark:bg-black p-4 rounded-lg my-4">
-                        <pre class="font-mono text-white text-sm whitespace-pre-wrap">${questionData.code.trim()}</pre>
-                    </div>
-                    <input type="text" id="code-answer" class="w-full p-3 bg-gray-100 dark:bg-gray-700 border-2 dark:border-gray-600 rounded-lg font-mono" placeholder="Tu respuesta aquí..." value="${userAnswers[currentQuestionIndex] || ''}">
-                `;
             } else if (questionData.type === 'matching') {
-                const concepts = Object.keys(questionData.pairs);
-                const descriptions = Object.values(questionData.pairs).sort(() => Math.random() - 0.5); // Shuffle descriptions
+                const concepts = Object.keys(questionData.pairs).sort(() => Math.random() - 0.5);
+                const descriptions = Object.values(questionData.pairs).sort(() => Math.random() - 0.5);
                 
                 html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-6">`;
-                // Columna de conceptos (arrastrables)
                 html += `<div id="concepts-container" class="space-y-3">`;
                 concepts.forEach((concept, index) => {
                     html += `<div id="concept-${index}" draggable="true" class="draggable-item p-3 bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700 rounded-lg">${concept}</div>`;
                 });
                 html += `</div>`;
 
-                // Columna de descripciones (zonas para soltar)
                 html += `<div class="space-y-3">`;
                 descriptions.forEach((desc, index) => {
                     html += `
-                        <div class="flex items-center">
-                            <div id="drop-zone-${index}" class="drop-zone w-2/5 h-12 border-2 dark:border-gray-500 rounded-lg flex items-center justify-center p-2 text-sm text-gray-500">Arrastra aquí</div>
-                            <div class="w-3/5 pl-3 text-sm">${desc}</div>
+                        <div class="flex items-center h-16">
+                            <div id="drop-zone-${index}" class="drop-zone w-2/5 h-full border-2 dark:border-gray-500 rounded-lg flex items-center justify-center p-2 text-sm text-gray-500">Arrastra aquí</div>
+                            <div class="w-3/5 pl-3">${desc}</div>
                         </div>
                     `;
                 });
                 html += `</div></div>`;
+                html += `<button id="check-matching-btn" class="mt-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg">Verificar</button>`;
             }
 
             questionContainer.innerHTML = html;
             updateButtons();
-            
-            if (questionData.type === 'multiple-choice') {
-                document.querySelectorAll('input[name="option"]').forEach(input => {
-                    input.addEventListener('change', (e) => userAnswers[currentQuestionIndex] = e.target.value);
-                });
-            } else if (questionData.type === 'code') {
-                document.getElementById('code-answer').addEventListener('input', (e) => userAnswers[currentQuestionIndex] = e.target.value.trim());
-            } else if (questionData.type === 'matching') {
-                setupDragAndDrop(questionData);
-            }
+            attachEventListeners();
         }
         
-        function setupDragAndDrop(questionData) {
+        function attachEventListeners() {
+            const questionData = quizData[currentQuestionIndex];
+            if (questionData.type === 'multiple-choice') {
+                document.querySelectorAll('input[name="option"]').forEach(input => {
+                    input.addEventListener('change', (e) => handleMultipleChoiceSelection(e.target));
+                });
+            } else if (questionData.type === 'matching') {
+                setupDragAndDrop();
+                document.getElementById('check-matching-btn').addEventListener('click', handleMatchingCheck);
+            }
+        }
+
+        function handleMultipleChoiceSelection(selectedInput) {
+            userAnswers[currentQuestionIndex] = selectedInput.value;
+            const questionData = quizData[currentQuestionIndex];
+            const isCorrect = selectedInput.value === questionData.answer;
+
+            document.querySelectorAll('#options-container label').forEach(label => {
+                const input = label.querySelector('input');
+                input.disabled = true;
+                if (input.value === questionData.answer) {
+                    label.classList.add('correct-answer');
+                } else if (input === selectedInput) {
+                    label.classList.add('incorrect-answer');
+                }
+            });
+            
+            feedbackContainer.innerHTML = `
+                <div class="mt-4 p-4 rounded-lg ${isCorrect ? 'bg-green-100 dark:bg-green-900/50' : 'bg-red-100 dark:bg-red-900/50'}">
+                    <p class="font-bold">${isCorrect ? '¡Correcto!' : 'Incorrecto.'} La respuesta correcta es: <strong>${questionData.answer}</strong></p>
+                </div>
+            `;
+        }
+
+        function setupDragAndDrop() {
             const draggables = document.querySelectorAll('.draggable-item');
             const dropZones = document.querySelectorAll('.drop-zone');
             
             draggables.forEach(draggable => {
-                draggable.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('text/plain', e.target.id);
-                    setTimeout(() => draggable.classList.add('opacity-50'), 0);
-                });
-                draggable.addEventListener('dragend', (e) => {
-                    e.target.classList.remove('opacity-50');
-                });
+                draggable.addEventListener('dragstart', e => e.dataTransfer.setData('text/plain', e.target.id));
             });
 
             dropZones.forEach(zone => {
-                zone.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    zone.classList.add('drag-over');
-                });
-                zone.addEventListener('dragleave', (e) => {
-                    zone.classList.remove('drag-over');
-                });
-                zone.addEventListener('drop', (e) => {
+                zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+                zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+                zone.addEventListener('drop', e => {
                     e.preventDefault();
                     zone.classList.remove('drag-over');
                     const draggedId = e.dataTransfer.getData('text/plain');
                     const draggedElement = document.getElementById(draggedId);
-                    
                     if (zone.children.length > 0) {
-                        const existingChild = zone.children[0];
-                        document.getElementById('concepts-container').appendChild(existingChild);
+                        document.getElementById('concepts-container').appendChild(zone.children[0]);
                     }
                     zone.innerHTML = '';
                     zone.appendChild(draggedElement);
-                    saveMatchingAnswers();
                 });
             });
         }
-        
-        function saveMatchingAnswers() {
+
+        function handleMatchingCheck() {
+            const questionData = quizData[currentQuestionIndex];
             const dropZones = document.querySelectorAll('.drop-zone');
-            const answers = {};
-            dropZones.forEach((zone) => {
+            const currentAnswers = {};
+            let correctMatches = 0;
+            
+            dropZones.forEach(zone => {
                 const conceptEl = zone.querySelector('.draggable-item');
                 if (conceptEl) {
                     const concept = conceptEl.textContent;
                     const description = zone.nextElementSibling.textContent;
-                    answers[concept] = description;
+                    currentAnswers[concept] = description;
+                    if (questionData.pairs[concept] === description) {
+                        correctMatches++;
+                        zone.parentElement.classList.add('correct-answer');
+                    } else {
+                        zone.parentElement.classList.add('incorrect-answer');
+                    }
                 }
             });
-            userAnswers[currentQuestionIndex] = answers;
+            userAnswers[currentQuestionIndex] = currentAnswers;
+            
+            const isAllCorrect = correctMatches === Object.keys(questionData.pairs).length;
+            feedbackContainer.innerHTML = `
+                <div class="mt-4 p-4 rounded-lg ${isAllCorrect ? 'bg-green-100 dark:bg-green-900/50' : 'bg-red-100 dark:bg-red-900/50'}">
+                    <p class="font-bold">${isAllCorrect ? '¡Perfecto!' : `Lograste ${correctMatches} de ${Object.keys(questionData.pairs).length} asociaciones correctas.`}</p>
+                </div>
+            `;
+            document.getElementById('check-matching-btn').disabled = true;
         }
 
         function updateButtons() {
             prevBtn.disabled = currentQuestionIndex === 0;
-            if (currentQuestionIndex === quizData.length - 1) {
-                nextBtn.classList.add('hidden');
-                submitBtn.classList.remove('hidden');
-            } else {
-                nextBtn.classList.remove('hidden');
-                submitBtn.classList.add('hidden');
-            }
+            nextBtn.disabled = currentQuestionIndex === quizData.length - 1;
             progressIndicator.textContent = `Pregunta ${currentQuestionIndex + 1} de ${quizData.length}`;
         }
 
@@ -315,63 +310,36 @@
             quizData.forEach((question, index) => {
                 const userAnswer = userAnswers[index];
                 let isCorrect = false;
-                let correctAnswerHtml = '';
-                let userAnswerHtml = '';
                 
-                if (question.type === 'multiple-choice' || question.type === 'code') {
-                    const normalizedUserAnswer = typeof userAnswer === 'string' ? userAnswer.trim().toLowerCase().replace(/\s+/g, ' ') : '';
-                    const normalizedCorrectAnswer = question.answer.trim().toLowerCase().replace(/\s+/g, ' ');
-                    isCorrect = normalizedUserAnswer === normalizedCorrectAnswer;
-                    correctAnswerHtml = `<code>${question.answer}</code>`;
-                    userAnswerHtml = userAnswer ? `<code>${userAnswer}</code>` : 'No respondida';
+                if (question.type === 'multiple-choice') {
+                    isCorrect = userAnswer === question.answer;
                 } else if (question.type === 'matching') {
                     let correctMatches = 0;
                     const totalMatches = Object.keys(question.pairs).length;
                     if(userAnswer && Object.keys(userAnswer).length === totalMatches) {
                         for (const concept in userAnswer) {
-                            if (question.pairs[concept] === userAnswer[concept]) {
-                                correctMatches++;
-                            }
+                            if (question.pairs[concept] === userAnswer[concept]) correctMatches++;
                         }
                     }
                     isCorrect = correctMatches === totalMatches;
-                    correctAnswerHtml = `<ul class="list-disc list-inside">${Object.entries(question.pairs).map(([c, d]) => `<li><b>${c}:</b> ${d}</li>`).join('')}</ul>`;
-                    userAnswerHtml = userAnswer ? `<ul class="list-disc list-inside">${Object.entries(userAnswer).map(([c, d]) => `<li><b>${c}:</b> ${d}</li>`).join('')}</ul>` : 'No respondida';
                 }
 
                 if (isCorrect) score++;
 
-                const reviewHtml = `
-                    <div class="p-4 rounded-lg ${isCorrect ? 'bg-green-100 dark:bg-green-800/30' : 'bg-red-100 dark:bg-red-800/30'}">
-                        <p class="font-bold">${index + 1}. ${question.question}</p>
-                        <div class="mt-2 text-sm">Tu respuesta: <div class="p-2 rounded mt-1 ${isCorrect ? 'text-green-800 dark:text-green-300' : 'text-red-800 dark:text-red-300'}">${userAnswerHtml}</div></div>
-                        ${!isCorrect ? `<div class="mt-1 text-sm">Respuesta correcta: <div class="p-2 rounded mt-1 text-green-800 dark:text-green-300">${correctAnswerHtml}</div></div>` : ''}
-                    </div>
-                `;
+                const reviewHtml = `<div class="p-4 rounded-lg ${isCorrect ? 'bg-green-100 dark:bg-green-800/30' : 'bg-red-100 dark:bg-red-800/30'}"><p class="font-bold">${index + 1}. ${question.question} - ${isCorrect ? 'Correcto' : 'Incorrecto'}</p></div>`;
                 answersReviewContainer.innerHTML += reviewHtml;
             });
 
-            scoreContainer.innerHTML = `Tu puntaje: <span class="text-blue-500 dark:text-blue-400">${score}</span> de <span class="text-blue-500 dark:text-blue-400">${quizData.length}</span>`;
+            scoreContainer.innerHTML = `Tu puntaje final: <span class="text-blue-500 dark:text-blue-400">${score}</span> de <span class="text-blue-500 dark:text-blue-400">${quizData.length}</span>`;
             resultsModal.classList.remove('hidden');
             resultsModal.classList.add('flex');
         }
 
-        prevBtn.addEventListener('click', () => {
-            if (currentQuestionIndex > 0) {
-                currentQuestionIndex--;
-                renderQuestion();
-            }
-        });
-
-        nextBtn.addEventListener('click', () => {
-            if (currentQuestionIndex < quizData.length - 1) {
-                currentQuestionIndex++;
-                renderQuestion();
-            }
-        });
-        
+        prevBtn.addEventListener('click', () => { if (currentQuestionIndex > 0) { currentQuestionIndex--; renderQuestion(); } });
+        nextBtn.addEventListener('click', () => { if (currentQuestionIndex < quizData.length - 1) { currentQuestionIndex++; renderQuestion(); } });
+        startBtn.addEventListener('click', () => { currentQuestionIndex = 0; renderQuestion(); });
+        endBtn.addEventListener('click', () => { currentQuestionIndex = quizData.length - 1; renderQuestion(); });
         submitBtn.addEventListener('click', showResults);
-
         restartBtn.addEventListener('click', () => {
             currentQuestionIndex = 0;
             userAnswers.fill(null);
@@ -385,3 +353,4 @@
 
 </body>
 </html>
+
