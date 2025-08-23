@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cuestionario de Repaso: DevOps</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <script type="text/javascript">document.oncontextmenu = function(){return false;}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
     <script>
@@ -135,6 +135,7 @@
             { type: 'multiple-choice', question: '¿Cuál es el objetivo principal de la fase de "Monitoreo y Feedback" en el ciclo de DevOps?', options: ['Desplegar nuevas versiones', 'Escribir código', 'Recopilar datos del rendimiento en producción para informar futuras mejoras', 'Realizar pruebas de seguridad'], answer: 'Recopilar datos del rendimiento en producción para informar futuras mejoras' },
         ];
 
+        let shuffledQuizData = [];
         const darkModeToggle = document.getElementById('dark-mode-toggle');
         const questionContainer = document.getElementById('question-container');
         const feedbackContainer = document.getElementById('feedback-container');
@@ -148,9 +149,8 @@
         const scoreContainer = document.getElementById('score-container');
         const answersReviewContainer = document.getElementById('answers-review-container');
         const restartBtn = document.getElementById('restart-btn');
-
         let currentQuestionIndex = 0;
-        let userAnswers = new Array(quizData.length).fill(null);
+        let userAnswers = [];
 
         darkModeToggle.addEventListener('change', () => {
             document.documentElement.classList.toggle('dark', darkModeToggle.checked);
@@ -161,9 +161,26 @@
             document.documentElement.classList.add('dark');
             darkModeToggle.checked = true;
         }
+        
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function startQuiz() {
+            shuffledQuizData = [...quizData];
+            shuffleArray(shuffledQuizData);
+            userAnswers = new Array(shuffledQuizData.length).fill(null);
+            currentQuestionIndex = 0;
+            resultsModal.classList.add('hidden');
+            resultsModal.classList.remove('flex');
+            renderQuestion();
+        }
 
         function renderQuestion() {
-            const questionData = quizData[currentQuestionIndex];
+            const questionData = shuffledQuizData[currentQuestionIndex];
             feedbackContainer.innerHTML = '';
             let html = `<h2 class="text-2xl font-bold mb-6">${currentQuestionIndex + 1}. ${questionData.question}</h2>`;
 
@@ -204,24 +221,58 @@
 
             questionContainer.innerHTML = html;
             updateButtons();
-            attachEventListeners();
+            restoreStateAndAttachListeners();
         }
         
-        function attachEventListeners() {
-            const questionData = quizData[currentQuestionIndex];
-            if (questionData.type === 'multiple-choice') {
-                document.querySelectorAll('input[name="option"]').forEach(input => {
-                    input.addEventListener('change', (e) => handleMultipleChoiceSelection(e.target));
-                });
-            } else if (questionData.type === 'matching') {
-                setupDragAndDrop();
-                document.getElementById('check-matching-btn').addEventListener('click', handleMatchingCheck);
+        function restoreStateAndAttachListeners() {
+            const questionData = shuffledQuizData[currentQuestionIndex];
+            const savedAnswer = userAnswers[currentQuestionIndex];
+
+            if (savedAnswer !== null) {
+                if (questionData.type === 'multiple-choice') {
+                    const selectedRadio = document.querySelector(`input[name="option"][value="${savedAnswer}"]`);
+                    if (selectedRadio) {
+                        selectedRadio.checked = true;
+                        handleMultipleChoiceSelection(selectedRadio, false); // false to not re-save
+                    }
+                } else if (questionData.type === 'matching') {
+                    const conceptsContainer = document.getElementById('concepts-container');
+                    const descriptionToZoneMap = new Map();
+                    document.querySelectorAll('.drop-zone').forEach(zone => {
+                        descriptionToZoneMap.set(zone.nextElementSibling.textContent, zone);
+                    });
+                    
+                    const tempDiv = document.createElement('div');
+                    conceptsContainer.querySelectorAll('.draggable-item').forEach(el => tempDiv.appendChild(el));
+
+                    for (const [concept, description] of Object.entries(savedAnswer)) {
+                        const dropZone = descriptionToZoneMap.get(description);
+                        const draggableElement = Array.from(tempDiv.children).find(c => c.textContent === concept);
+                        if (dropZone && draggableElement) {
+                            dropZone.innerHTML = '';
+                            dropZone.appendChild(draggableElement);
+                        }
+                    }
+                    
+                    Array.from(tempDiv.children).forEach(child => conceptsContainer.appendChild(child));
+                    
+                    handleMatchingCheck(false); // false to not re-save
+                }
+            } else {
+                 if (questionData.type === 'multiple-choice') {
+                    document.querySelectorAll('input[name="option"]').forEach(input => {
+                        input.addEventListener('change', (e) => handleMultipleChoiceSelection(e.target));
+                    });
+                } else if (questionData.type === 'matching') {
+                    setupDragAndDrop();
+                    document.getElementById('check-matching-btn').addEventListener('click', () => handleMatchingCheck());
+                }
             }
         }
 
-        function handleMultipleChoiceSelection(selectedInput) {
-            userAnswers[currentQuestionIndex] = selectedInput.value;
-            const questionData = quizData[currentQuestionIndex];
+        function handleMultipleChoiceSelection(selectedInput, saveAnswer = true) {
+            if (saveAnswer) userAnswers[currentQuestionIndex] = selectedInput.value;
+            const questionData = shuffledQuizData[currentQuestionIndex];
             const isCorrect = selectedInput.value === questionData.answer;
 
             document.querySelectorAll('#options-container label').forEach(label => {
@@ -229,7 +280,7 @@
                 input.disabled = true;
                 if (input.value === questionData.answer) {
                     label.classList.add('correct-answer');
-                } else if (input === selectedInput) {
+                } else if (input.checked) {
                     label.classList.add('incorrect-answer');
                 }
             });
@@ -266,8 +317,8 @@
             });
         }
 
-        function handleMatchingCheck() {
-            const questionData = quizData[currentQuestionIndex];
+        function handleMatchingCheck(saveAnswer = true) {
+            const questionData = shuffledQuizData[currentQuestionIndex];
             const dropZones = document.querySelectorAll('.drop-zone');
             const currentAnswers = {};
             let correctMatches = 0;
@@ -286,7 +337,7 @@
                     }
                 }
             });
-            userAnswers[currentQuestionIndex] = currentAnswers;
+            if(saveAnswer) userAnswers[currentQuestionIndex] = currentAnswers;
             
             const isAllCorrect = correctMatches === Object.keys(questionData.pairs).length;
             feedbackContainer.innerHTML = `
@@ -295,20 +346,25 @@
                 </div>
             `;
             document.getElementById('check-matching-btn').disabled = true;
+            document.querySelectorAll('.draggable-item').forEach(item => item.draggable = false);
         }
 
         function updateButtons() {
             prevBtn.disabled = currentQuestionIndex === 0;
-            nextBtn.disabled = currentQuestionIndex === quizData.length - 1;
-            progressIndicator.textContent = `Pregunta ${currentQuestionIndex + 1} de ${quizData.length}`;
+            nextBtn.disabled = currentQuestionIndex === shuffledQuizData.length - 1;
+            progressIndicator.textContent = `Pregunta ${currentQuestionIndex + 1} de ${shuffledQuizData.length}`;
         }
 
         function showResults() {
             let score = 0;
+            let answeredCount = 0;
             answersReviewContainer.innerHTML = '';
 
-            quizData.forEach((question, index) => {
+            shuffledQuizData.forEach((question, index) => {
                 const userAnswer = userAnswers[index];
+                if (userAnswer === null) return;
+                
+                answeredCount++;
                 let isCorrect = false;
                 
                 if (question.type === 'multiple-choice') {
@@ -316,7 +372,7 @@
                 } else if (question.type === 'matching') {
                     let correctMatches = 0;
                     const totalMatches = Object.keys(question.pairs).length;
-                    if(userAnswer && Object.keys(userAnswer).length === totalMatches) {
+                    if(userAnswer && Object.keys(userAnswer).length > 0) {
                         for (const concept in userAnswer) {
                             if (question.pairs[concept] === userAnswer[concept]) correctMatches++;
                         }
@@ -330,27 +386,23 @@
                 answersReviewContainer.innerHTML += reviewHtml;
             });
 
-            scoreContainer.innerHTML = `Tu puntaje final: <span class="text-blue-500 dark:text-blue-400">${score}</span> de <span class="text-blue-500 dark:text-blue-400">${quizData.length}</span>`;
+            scoreContainer.innerHTML = `Tu puntaje: <span class="text-blue-500 dark:text-blue-400">${score}</span> de <span class="text-blue-500 dark:text-blue-400">${answeredCount}</span> respondidas.`;
             resultsModal.classList.remove('hidden');
             resultsModal.classList.add('flex');
         }
 
         prevBtn.addEventListener('click', () => { if (currentQuestionIndex > 0) { currentQuestionIndex--; renderQuestion(); } });
-        nextBtn.addEventListener('click', () => { if (currentQuestionIndex < quizData.length - 1) { currentQuestionIndex++; renderQuestion(); } });
+        nextBtn.addEventListener('click', () => { if (currentQuestionIndex < shuffledQuizData.length - 1) { currentQuestionIndex++; renderQuestion(); } });
         startBtn.addEventListener('click', () => { currentQuestionIndex = 0; renderQuestion(); });
-        endBtn.addEventListener('click', () => { currentQuestionIndex = quizData.length - 1; renderQuestion(); });
+        endBtn.addEventListener('click', () => { currentQuestionIndex = shuffledQuizData.length - 1; renderQuestion(); });
         submitBtn.addEventListener('click', showResults);
-        restartBtn.addEventListener('click', () => {
-            currentQuestionIndex = 0;
-            userAnswers.fill(null);
-            resultsModal.classList.add('hidden');
-            resultsModal.classList.remove('flex');
-            renderQuestion();
-        });
+        restartBtn.addEventListener('click', startQuiz);
 
-        renderQuestion();
+        startQuiz();
     </script>
 
 </body>
 </html>
+
+
 
