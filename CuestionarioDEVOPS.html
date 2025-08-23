@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cuestionario de Repaso: DevOps</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script type="text/javascript">document.oncontextmenu = function(){return false;}</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <script type="text/javascript">document.oncontextmenu = function(){return false;}</script>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
     <script>
@@ -72,7 +72,7 @@
     <div id="results-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8">
             <h2 class="text-3xl font-bold text-center mb-4 text-gray-900 dark:text-white">Resultados del Quiz</h2>
-            <div id="score-container" class="text-center text-2xl font-semibold mb-6"></div>
+            <div id="score-container" class="text-center text-lg mb-6 space-y-2"></div>
             <div id="answers-review-container" class="space-y-4"></div>
             <div class="text-center mt-8">
                 <button id="restart-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300">Intentar de Nuevo</button>
@@ -233,7 +233,7 @@
                     const selectedRadio = document.querySelector(`input[name="option"][value="${savedAnswer}"]`);
                     if (selectedRadio) {
                         selectedRadio.checked = true;
-                        handleMultipleChoiceSelection(selectedRadio, false); // false to not re-save
+                        handleMultipleChoiceSelection(selectedRadio, false);
                     }
                 } else if (questionData.type === 'matching') {
                     const conceptsContainer = document.getElementById('concepts-container');
@@ -243,7 +243,9 @@
                     });
                     
                     const tempDiv = document.createElement('div');
-                    conceptsContainer.querySelectorAll('.draggable-item').forEach(el => tempDiv.appendChild(el));
+                    if(conceptsContainer) {
+                        conceptsContainer.querySelectorAll('.draggable-item').forEach(el => tempDiv.appendChild(el));
+                    }
 
                     for (const [concept, description] of Object.entries(savedAnswer)) {
                         const dropZone = descriptionToZoneMap.get(description);
@@ -254,9 +256,11 @@
                         }
                     }
                     
-                    Array.from(tempDiv.children).forEach(child => conceptsContainer.appendChild(child));
+                    if(conceptsContainer) {
+                        Array.from(tempDiv.children).forEach(child => conceptsContainer.appendChild(child));
+                    }
                     
-                    handleMatchingCheck(false); // false to not re-save
+                    handleMatchingCheck(false);
                 }
             } else {
                  if (questionData.type === 'multiple-choice') {
@@ -357,36 +361,70 @@
 
         function showResults() {
             let score = 0;
-            let answeredCount = 0;
+            let incorrectCount = 0;
+            let unansweredCount = 0;
             answersReviewContainer.innerHTML = '';
 
             shuffledQuizData.forEach((question, index) => {
                 const userAnswer = userAnswers[index];
-                if (userAnswer === null) return;
-                
-                answeredCount++;
                 let isCorrect = false;
-                
-                if (question.type === 'multiple-choice') {
-                    isCorrect = userAnswer === question.answer;
-                } else if (question.type === 'matching') {
-                    let correctMatches = 0;
-                    const totalMatches = Object.keys(question.pairs).length;
-                    if(userAnswer && Object.keys(userAnswer).length > 0) {
-                        for (const concept in userAnswer) {
-                            if (question.pairs[concept] === userAnswer[concept]) correctMatches++;
+                let reviewHtml = '';
+
+                if (userAnswer === null) {
+                    unansweredCount++;
+                    isCorrect = false;
+                } else {
+                    if (question.type === 'multiple-choice') {
+                        isCorrect = userAnswer === question.answer;
+                    } else if (question.type === 'matching') {
+                        let correctMatches = 0;
+                        const totalMatches = Object.keys(question.pairs).length;
+                        if(userAnswer && Object.keys(userAnswer).length > 0) {
+                            for (const concept in userAnswer) {
+                                if (question.pairs[concept] === userAnswer[concept]) correctMatches++;
+                            }
                         }
+                        isCorrect = correctMatches === totalMatches;
                     }
-                    isCorrect = correctMatches === totalMatches;
                 }
 
-                if (isCorrect) score++;
-
-                const reviewHtml = `<div class="p-4 rounded-lg ${isCorrect ? 'bg-green-100 dark:bg-green-800/30' : 'bg-red-100 dark:bg-red-800/30'}"><p class="font-bold">${index + 1}. ${question.question} - ${isCorrect ? 'Correcto' : 'Incorrecto'}</p></div>`;
-                answersReviewContainer.innerHTML += reviewHtml;
+                if (isCorrect) {
+                    score++;
+                } else if (userAnswer !== null) {
+                    incorrectCount++;
+                }
+                
+                // Show all questions in review
+                reviewHtml = `
+                    <div class="p-4 rounded-lg ${isCorrect ? 'bg-green-100 dark:bg-green-800/30' : 'bg-red-100 dark:bg-red-800/30'}">
+                        <p class="font-bold">${index + 1}. ${question.question}</p>
+                        <p class="mt-2 text-sm">Tu respuesta: <span class="font-semibold">${userAnswer !== null ? userAnswer : 'No respondida'}</span></p>
+                        ${!isCorrect ? `<p class="mt-1 text-sm">Respuesta correcta: <strong class="text-green-800 dark:text-green-300">${question.answer || 'Ver asociaciones correctas'}</strong></p>` : ''}
+                    </div>
+                `;
+                 answersReviewContainer.innerHTML += reviewHtml;
             });
 
-            scoreContainer.innerHTML = `Tu puntaje: <span class="text-blue-500 dark:text-blue-400">${score}</span> de <span class="text-blue-500 dark:text-blue-400">${answeredCount}</span> respondidas.`;
+            const totalQuestions = shuffledQuizData.length;
+            const percentage = totalQuestions > 0 ? ((score / totalQuestions) * 100).toFixed(2) : 0;
+
+            scoreContainer.innerHTML = `
+                <div class="text-4xl font-bold mb-4">${percentage}%</div>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-green-100 dark:bg-green-800/30 p-2 rounded-lg">
+                        <div class="font-bold text-2xl text-green-600 dark:text-green-300">${score}</div>
+                        <div class="text-xs">Correctas</div>
+                    </div>
+                    <div class="bg-red-100 dark:bg-red-800/30 p-2 rounded-lg">
+                        <div class="font-bold text-2xl text-red-600 dark:text-red-300">${incorrectCount}</div>
+                        <div class="text-xs">Incorrectas</div>
+                    </div>
+                    <div class="bg-gray-200 dark:bg-gray-600/30 p-2 rounded-lg">
+                        <div class="font-bold text-2xl text-gray-600 dark:text-gray-300">${unansweredCount}</div>
+                        <div class="text-xs">No Contestadas</div>
+                    </div>
+                </div>
+            `;
             resultsModal.classList.remove('hidden');
             resultsModal.classList.add('flex');
         }
@@ -403,6 +441,7 @@
 
 </body>
 </html>
+
 
 
 
