@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cuestionario de Repaso: DevOps</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <script type="text/javascript">document.oncontextmenu = function(){return false;}</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
     <script>
@@ -209,9 +209,10 @@
             if (questionData.type === 'multiple-choice') {
                 html += `<div class="space-y-3" id="options-container">`;
                 questionData.options.forEach(option => {
+                    const sanitizedOption = option.replace(/"/g, '&quot;');
                     html += `
                         <label class="flex items-center p-4 border-2 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200">
-                            <input type="radio" name="option" value="${option}" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500">
+                            <input type="radio" name="option" value="${sanitizedOption}" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500">
                             <span class="ml-4 text-lg">${option}</span>
                         </label>
                     `;
@@ -252,7 +253,7 @@
 
             if (savedAnswer !== null) {
                 if (questionData.type === 'multiple-choice') {
-                    const selectedRadio = document.querySelector(`input[name="option"][value="${savedAnswer}"]`);
+                    const selectedRadio = document.querySelector(`input[name="option"][value="${savedAnswer.replace(/"/g, '&quot;')}"]`);
                     if (selectedRadio) {
                         selectedRadio.checked = true;
                         handleMultipleChoiceSelection(selectedRadio, false);
@@ -469,7 +470,10 @@
 </body>
 </html>
 
+   
+
     
+
 
 
 
